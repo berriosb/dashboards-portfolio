@@ -68,7 +68,11 @@ Deploy automático conectado a `main` → `https://dashboards-portfolio-berriosb
 
 ## Datos
 
+**Fuente:** JSON estático embebido en `data/*.json`. Decisión documentada en [PROJECT.md](./PROJECT.md#fuente-de-datos-json-estático-embebido-decidido).
+
 Todos los datasets son **sintéticos** y generados para reflejar patrones del mercado chileno (Ripley-like retail, BCO Falabella-like banca, Copec-like logística). Nada de datos reales ni privados.
+
+**Si en el futuro quieres filtros interactivos o live data**, la migración a Supabase es de ~1 hora (solo cambia el import de los datos). Por ahora la simplicidad gana.
 
 ## Offer-mapping
 

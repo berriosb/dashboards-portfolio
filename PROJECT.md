@@ -143,7 +143,75 @@ vercel --prod       # deploy a producción
 
 ## Datasets — qué muestra cada dashboard
 
-### 🛒 Retail (4-5 visualizaciones)
+### Fuente de datos: JSON estático embebido (decidido)
+
+**Decisión 2026-09-29:** Los 3 dashboards consumen datos desde archivos JSON estáticos embebidos en el bundle de Next.js (`data/retail.json`, `data/banca.json`, `data/logistica.json`).
+
+#### Por qué JSON estático y no Supabase / Insforge / Neon
+
+| Opción | Tiempo setup | Latencia | Costo | Complejidad deploy | Mejor para |
+|---|---|---|---|---|---|
+| **JSON estático** ⭐ | 0 | 0ms | $0 | Nula | Showcase visual rápido |
+| Supabase | 1-2h | ~150ms | $0 (free tier 500MB) | Media (secrets, RLS) | Full-stack con auth |
+| Insforge (beta) | 1-2h | N/A (nuevo) | Desconocido | Media | Alternativa moderna a Supabase |
+| Neon | 1h | Baja | $0 (free tier 512MB) | Baja (solo DB) | Data engineering puro |
+| Turso (libSQL) | 1h | Baja | $0 (9GB) | Baja | Edge-first |
+| n8n + APIs reales | 2-3h | Variable | $0 | Alta (workflows) | Live data real-time |
+
+**Razones para JSON estático en este proyecto:**
+
+1. **La promesa del showcase es "rápido y bonito"** — un recruiter skimming 30 segundos no abre DevTools a ver si los datos vienen de una API. Ve los KPIs, los charts, el diseño.
+2. **Tiempo de implementación:** 4-6h vs 6-8h con Supabase. La diferencia entre "lo termino este finde" y "lo dejo para más tarde".
+3. **Cero complejidad operacional:** no hay secrets en Vercel, no hay rate limits, no hay RLS que configurar.
+4. **Datos coherentes > datos reales con gaps:** un JSON sintético bien diseñado cuenta mejor la historia que datos públicos con outliers y errores.
+5. **Upgrade path limpio:** si después queremos Supabase, el cambio es de 1 hora (solo cambia el import de los datos).
+
+#### Cuándo SÍ migrar a Supabase / BaaS
+
+| Trigger | Acción |
+|---|---|
+| Quieres demostrar **full-stack skills** explícitamente | Migrar a Supabase + RLS |
+| Quieres **filtros interactivos** que cambien los datos | Migrar (JSON no permite queries dinámicas eficientes) |
+| Quieres **datos que se actualicen solos** (scraping diario) | Migrar + n8n cron |
+| Tienes 3+ dashboards con **datos relacionados** que se conectan | Migrar (relaciones SQL) |
+
+**Para este showcase ninguno de estos triggers aplica.** Es demo, no producto.
+
+#### Relación con el resto del portafolio
+
+La señal de "sé integrar DBs reales" ya la dan otros repos del portafolio:
+
+- `dash-bi` — Next.js + Postgres + Drizzle + multi-tenant + RLS (producto en producción)
+- `chilecompra-anomalias-sql` — DuckDB + análisis SQL reproducible
+
+El showcase **no necesita repetir esa señal**. Su rol es distinto: vitrina visual rápida.
+
+### Formato de los JSON
+
+```typescript
+// data/retail.json (ejemplo de shape, no contenido final)
+{
+  "kpis": [
+    { "label": "Ticket promedio", "value": 45230, "delta": 12.3, "unit": "CLP" },
+    { "label": "Margen bruto", "value": 38.5, "delta": 2.1, "unit": "%" }
+  ],
+  "ventasPorCategoria": [
+    { "categoria": "Hogar", "ventas": 125000000 },
+    ...
+  ],
+  "rfmSegments": [...],
+  "funnel": [...],
+  "tendenciaMensual": [...]
+}
+```
+
+**Reglas:**
+- Sin campos `null` (usar `0` o `[]` según corresponda)
+- Fechas en ISO 8601 (`"2026-09-15"`)
+- Montos en CLP como enteros (sin separadores de miles, sin símbolo)
+- Porcentajes como números (no strings), el consumidor decide formato
+
+### Por industria (4-5 visualizaciones)
 
 | Visualización | Qué muestra | Datos sintéticos |
 |---|---|---|
@@ -233,7 +301,7 @@ berriosb/berriosb                       ← profile README (lista TODO)
 | 3 | **Landing style** | Cards con íconos Lucide + descripción + CTA | ⏳ Pendiente |
 | 4 | **Tipografía** | Geist Sans (default Next 16) | ⏳ Pendiente |
 | 5 | **Paleta** | 1 color por dashboard (retail=azul, banca=verde, logística=naranja) | ⏳ Pendiente |
-| 6 | **Datos sintéticos** | Generados a mano en JSON estático (no Faker en runtime) | ⏳ Pendiente |
+| 6 | **Datos sintéticos** | JSON estático embebido en `data/*.json` (no Faker runtime, no DB) | ✅ **Definido 2026-09-29** |
 
 ## Riesgos identificados
 
@@ -249,3 +317,4 @@ berriosb/berriosb                       ← profile README (lista TODO)
 4. Conectar repo a Vercel y verificar primer deploy
 5. Sprint 2: banca + logística
 6. Sprint 3: polish + OG image + release
+7. (Opcional futuro) Evaluar migración a Supabase si quieres filtros interactivos o live data — ver `PROJECT.md` § "Cuándo SÍ migrar a Supabase / BaaS"
