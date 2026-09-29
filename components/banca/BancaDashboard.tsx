@@ -16,6 +16,8 @@ import { CmfMoraLineCard } from './CmfMoraLineCard';
 import { BancaSegmentsDonutCard } from './BancaSegmentsDonutCard';
 import { BancaDrilldownDrawer } from './BancaDrilldownDrawer';
 import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ShareViewButton } from '@/components/ui/ShareViewButton';
 import { Landmark, FileSpreadsheet } from 'lucide-react';
 
 interface BancaDashboardProps {
@@ -94,6 +96,7 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Explorar Deudores y Créditos
           </button>
+          <ShareViewButton />
           <RepoLinkBadge repoName="banca-chile-datos" />
         </div>
       </div>
@@ -207,37 +210,49 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
         </div>
       </div>
 
-      {/* Fila 1 de Gráficos: Aging de Cartera + Distribución de Segmentos */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-7 min-w-0">
-          <AgingChartCard
-            data={aggregated.agingCartera}
-            selectedTramo={query.tramoMora}
-            onSelectTramo={(tramoMora) => setQuery({ tramoMora })}
-          />
-        </div>
-        <div className="lg:col-span-5 min-w-0">
-          <BancaSegmentsDonutCard
-            data={aggregated.distribucionSegmentos}
-            selectedSegment={query.segmento}
-            onSelectSegment={(segmento) => setQuery({ segmento })}
-          />
-        </div>
-      </div>
+      {/* Grillas de Visualizaciones o Estado Vacío */}
+      {aggregated.filteredCount === 0 ? (
+        <EmptyState
+          title="Sin colocaciones para estos filtros"
+          description="No se encontraron créditos que coincidan con la combinación de producto, segmento, región y mora seleccionada."
+          onResetFilters={handleResetFilters}
+          variant="banca"
+        />
+      ) : (
+        <>
+          {/* Fila 1 de Gráficos: Aging de Cartera + Distribución de Segmentos */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="lg:col-span-7 min-w-0">
+              <AgingChartCard
+                data={aggregated.agingCartera}
+                selectedTramo={query.tramoMora}
+                onSelectTramo={(tramoMora) => setQuery({ tramoMora })}
+              />
+            </div>
+            <div className="lg:col-span-5 min-w-0">
+              <BancaSegmentsDonutCard
+                data={aggregated.distribucionSegmentos}
+                selectedSegment={query.segmento}
+                onSelectSegment={(segmento) => setQuery({ segmento })}
+              />
+            </div>
+          </div>
 
-      {/* Fila 2 de Gráficos: Colocaciones por Producto + Tendencia Mora CMF */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-6 min-w-0">
-          <ProductsBarCard
-            data={aggregated.colocacionesPorProducto}
-            selectedProduct={query.producto}
-            onSelectProduct={(producto) => setQuery({ producto })}
-          />
-        </div>
-        <div className="lg:col-span-6 min-w-0">
-          <CmfMoraLineCard data={aggregated.tendenciaMoraMensual} />
-        </div>
-      </div>
+          {/* Fila 2 de Gráficos: Colocaciones por Producto + Tendencia Mora CMF */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="lg:col-span-6 min-w-0">
+              <ProductsBarCard
+                data={aggregated.colocacionesPorProducto}
+                selectedProduct={query.producto}
+                onSelectProduct={(producto) => setQuery({ producto })}
+              />
+            </div>
+            <div className="lg:col-span-6 min-w-0">
+              <CmfMoraLineCard data={aggregated.tendenciaMoraMensual} />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Drawer de Drilldown Lateral */}
       <BancaDrilldownDrawer

@@ -17,6 +17,8 @@ import { FunnelChartCard } from '@/components/charts/FunnelChartCard';
 import { RfmHeatmap } from '@/components/charts/RfmHeatmap';
 import { DrilldownDrawer } from './DrilldownDrawer';
 import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
+import { ShareViewButton } from '@/components/ui/ShareViewButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   Building2,
   Package,
@@ -117,6 +119,7 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
             <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             Explorar Clientes
           </button>
+          <ShareViewButton />
           <RepoLinkBadge repoName="retail-bi-chile" />
         </div>
       </div>
@@ -218,61 +221,73 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
         </div>
       </div>
 
-      {/* Fila 1 de Gráficos: Tendencia Temporal + Cuota por Canal */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-8 min-w-0">
-          <LineChartCard data={aggregated.tendenciaMensual} />
-        </div>
-        <div className="lg:col-span-4 min-w-0">
-          <DonutChartCard
-            data={aggregated.ventasPorCanal}
-            selectedChannel={query.canal}
-            onSelectChannel={(canal) => setQuery({ canal })}
-          />
-        </div>
-      </div>
-
-      {/* Fila 2 de Gráficos: Desglose por Categoría + Embudo de Conversión */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-6 min-w-0">
-          <BarChartCard
-            data={aggregated.ventasPorCategoria}
-            selectedCategory={query.categoria}
-            onSelectCategory={(categoria) => setQuery({ categoria })}
-          />
-        </div>
-        <div className="lg:col-span-6 min-w-0">
-          <FunnelChartCard data={dataset.precomputed.funnel} />
-        </div>
-      </div>
-
-      {/* Fila 3: Matriz RFM 5x5 Nativa (CSS Grid + Radix Tooltips) */}
-      <div className="bg-card rounded-xl border border-border p-4 md:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
-          <div className="space-y-0.5">
-            <h2 className="text-base md:text-lg font-bold text-foreground flex items-center gap-2">
-              <Grid className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              Matriz RFM 5x5: Recencia vs Frecuencia de Compra
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Segmentación algorítmica de clientes con scores normalizados de 1 a 5. Haz clic en cualquier celda o botón de segmento para filtrar el panel completo.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => openDrilldown('customers')}
-            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold underline self-start sm:self-auto"
-          >
-            Ver tabla de clientes →
-          </button>
-        </div>
-
-        <RfmHeatmap
-          matrix={aggregated.rfmMatrix}
-          selectedSegment={query.segmentoRfm}
-          onSelectSegment={(segmentoRfm) => setQuery({ segmentoRfm })}
+      {/* Grillas de Visualizaciones o Estado Vacío */}
+      {aggregated.filteredCount === 0 ? (
+        <EmptyState
+          title="Sin transacciones para estos filtros"
+          description="No se registraron ventas en el período simulado para la combinación de categoría, canal y región seleccionada."
+          onResetFilters={handleResetFilters}
+          variant="retail"
         />
-      </div>
+      ) : (
+        <>
+          {/* Fila 1 de Gráficos: Tendencia Temporal + Cuota por Canal */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="lg:col-span-8 min-w-0">
+              <LineChartCard data={aggregated.tendenciaMensual} />
+            </div>
+            <div className="lg:col-span-4 min-w-0">
+              <DonutChartCard
+                data={aggregated.ventasPorCanal}
+                selectedChannel={query.canal}
+                onSelectChannel={(canal) => setQuery({ canal })}
+              />
+            </div>
+          </div>
+
+          {/* Fila 2 de Gráficos: Desglose por Categoría + Embudo de Conversión */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="lg:col-span-6 min-w-0">
+              <BarChartCard
+                data={aggregated.ventasPorCategoria}
+                selectedCategory={query.categoria}
+                onSelectCategory={(categoria) => setQuery({ categoria })}
+              />
+            </div>
+            <div className="lg:col-span-6 min-w-0">
+              <FunnelChartCard data={dataset.precomputed.funnel} />
+            </div>
+          </div>
+
+          {/* Fila 3: Matriz RFM 5x5 Nativa (CSS Grid + Radix Tooltips) */}
+          <div className="bg-card rounded-xl border border-border p-4 md:p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+              <div className="space-y-0.5">
+                <h2 className="text-base md:text-lg font-bold text-foreground flex items-center gap-2">
+                  <Grid className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  Matriz RFM 5x5: Recencia vs Frecuencia de Compra
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Segmentación algorítmica de clientes con scores normalizados de 1 a 5. Haz clic en cualquier celda o botón de segmento para filtrar el panel completo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openDrilldown('customers')}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold underline self-start sm:self-auto"
+              >
+                Ver tabla de clientes →
+              </button>
+            </div>
+
+            <RfmHeatmap
+              matrix={aggregated.rfmMatrix}
+              selectedSegment={query.segmentoRfm}
+              onSelectSegment={(segmentoRfm) => setQuery({ segmentoRfm })}
+            />
+          </div>
+        </>
+      )}
 
       {/* Drawer Lateral de Drilldown (SKUs o Clientes) */}
       <DrilldownDrawer
