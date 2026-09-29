@@ -14,7 +14,6 @@ import {
   Layers,
   ShieldCheck,
 } from 'lucide-react';
-import { GithubIcon, LinkedinIcon } from '@/components/ui/icons';
 
 export default function Home() {
   const dashboards = [
@@ -23,7 +22,7 @@ export default function Home() {
       title: 'Retail Omnicanal & Fidelización',
       industry: 'Retail & Consumo Masivo',
       status: 'active',
-      statusLabel: 'Nivel 2: Activo',
+      statusLabel: 'Interactivo (0ms)',
       href: '/retail',
       accentColor: 'blue',
       description:
@@ -47,7 +46,7 @@ export default function Home() {
       title: 'Banca & Riesgo Crediticio',
       industry: 'Servicios Financieros & Banca',
       status: 'active',
-      statusLabel: 'Nivel 2: Activo',
+      statusLabel: 'Interactivo (0ms)',
       href: '/banca',
       accentColor: 'emerald',
       description:
@@ -71,7 +70,7 @@ export default function Home() {
       title: 'Logística & Cadena de Suministro',
       industry: 'Distribución & Última Milla',
       status: 'active',
-      statusLabel: 'Nivel 2: Activo',
+      statusLabel: 'Interactivo (0ms)',
       href: '/logistica',
       accentColor: 'amber',
       description:
@@ -117,20 +116,23 @@ export default function Home() {
           <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
             <Link
               href="/retail"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-all shadow-sm hover:shadow-md"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all shadow-sm hover:shadow-md"
             >
               <span>Explorar Dashboard Retail</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a
-              href="https://github.com/bastianberrios/dashboards-portfolio"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-medium text-sm transition-all"
+            <Link
+              href="/banca"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-medium text-sm transition-all shadow-xs"
             >
-              <GithubIcon className="w-4 h-4" />
-              <span>Ver Código en GitHub</span>
-            </a>
+              <span>Banca & Crédito</span>
+            </Link>
+            <Link
+              href="/logistica"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-medium text-sm transition-all shadow-xs"
+            >
+              <span>Logística & OTIF</span>
+            </Link>
           </div>
         </section>
 
@@ -149,16 +151,17 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {dashboards.map((dash) => {
-              const isActive = dash.status === 'active';
+              const borderAccent = {
+                blue: 'hover:border-blue-500/50 hover:shadow-blue-500/5',
+                emerald: 'hover:border-emerald-500/50 hover:shadow-emerald-500/5',
+                amber: 'hover:border-amber-500/50 hover:shadow-amber-500/5',
+              }[dash.accentColor];
+
               return (
                 <div
                   key={dash.id}
                   id={dash.id}
-                  className={`rounded-2xl border bg-card p-6 flex flex-col justify-between transition-all duration-200 ${
-                    isActive
-                      ? 'border-blue-300 dark:border-blue-900 shadow-md hover:shadow-lg ring-1 ring-blue-500/20'
-                      : 'border-border opacity-90 hover:opacity-100 hover:border-border/90 shadow-xs'
-                  }`}
+                  className={`rounded-2xl border border-border/80 bg-card p-6 flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-md ${borderAccent}`}
                 >
                   <div className="space-y-5">
                     {/* Header de la tarjeta */}
@@ -177,13 +180,8 @@ export default function Home() {
                         {dash.accentColor === 'amber' && <Truck className="w-5 h-5" />}
                       </div>
 
-                      <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                          isActive
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-900'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         {dash.statusLabel}
                       </span>
                     </div>
@@ -242,25 +240,19 @@ export default function Home() {
                       </strong>
                     </div>
 
-                    {isActive ? (
-                      <Link
-                        href={dash.href}
-                        className={`w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-xs transition-all shadow-xs ${
-                          dash.accentColor === 'blue'
-                            ? 'bg-blue-600 hover:bg-blue-700'
-                            : dash.accentColor === 'emerald'
-                            ? 'bg-emerald-600 hover:bg-emerald-700'
-                            : 'bg-amber-600 hover:bg-amber-700'
-                        }`}
-                      >
-                        <span>{dash.cta}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    ) : (
-                      <div className="w-full text-center py-2.5 px-4 rounded-xl border border-dashed border-border bg-muted/40 text-muted-foreground text-xs font-medium">
-                        {dash.cta}
-                      </div>
-                    )}
+                    <Link
+                      href={dash.href}
+                      className={`w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-xs transition-all shadow-xs ${
+                        dash.accentColor === 'blue'
+                          ? 'bg-blue-600 hover:bg-blue-700'
+                          : dash.accentColor === 'emerald'
+                          ? 'bg-emerald-600 hover:bg-emerald-700'
+                          : 'bg-amber-600 hover:bg-amber-700'
+                      }`}
+                    >
+                      <span>{dash.cta}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 </div>
               );
@@ -316,42 +308,45 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-foreground text-sm">Datos Sintéticos Deterministas</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Dataset de retail modelado con PRNG Mulberry32 y seed constante, verificado con invariantes matemáticas automáticas (`pnpm data:check`).
+                Datasets modelados con PRNG Mulberry32 y seed constante, verificados con invariantes matemáticas automáticas (`pnpm data:check`).
               </p>
             </div>
           </div>
         </section>
 
-        {/* Sección de Conversión Profesional para Reclutadores */}
-        <section className="rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-blue-50/50 via-background to-blue-50/30 dark:from-blue-950/20 dark:via-background dark:to-blue-950/10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Sección de Arquitectura y Rendimiento */}
+        <section className="rounded-2xl border border-border/80 bg-gradient-to-r from-blue-50/30 via-background to-emerald-50/20 dark:from-blue-950/20 dark:via-background dark:to-emerald-950/10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <h2 className="text-lg md:text-xl font-bold tracking-tight text-foreground">
-              ¿Buscando un Ingeniero de BI o Frontend Lead en Chile?
+              Arquitectura Frontend de Alto Rendimiento para BI
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground max-w-xl">
-              Este portafolio demuestra criterio de negocio, solvencia técnica en React 19 / TypeScript y capacidad de construir herramientas analíticas de impacto real.
+              Diseñado con criterios estrictos de negocio, 0ms de latencia in-memory y serialización de filtros en la URL con nuqs para máxima reproducibilidad analítica.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <a
-              href="https://linkedin.com/in/bastianberrios"
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            <Link
+              href="/retail"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-all shadow-xs"
             >
-              <LinkedinIcon className="w-4 h-4" />
-              <span>Conectar en LinkedIn</span>
-            </a>
-            <a
-              href="https://github.com/bastianberrios/dashboards-portfolio"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-medium text-xs transition-all"
+              <span>Retail</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <Link
+              href="/banca"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-all shadow-xs"
             >
-              <GithubIcon className="w-4 h-4" />
-              <span>Ver Repositorio</span>
-            </a>
+              <span>Banca</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <Link
+              href="/logistica"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition-all shadow-xs"
+            >
+              <span>Logística</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </section>
       </main>

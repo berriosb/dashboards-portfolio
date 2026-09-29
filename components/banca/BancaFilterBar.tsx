@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   X,
   AlertTriangle,
+  ChevronDown,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
@@ -71,16 +72,12 @@ export function BancaFilterBar({
     selectedDateRange.end !== '2027-12-31';
 
   return (
-    <div className="bg-card rounded-xl border border-border p-3.5 md:p-4 shadow-xs space-y-3">
+    <div className="bg-card/90 dark:bg-card/60 rounded-xl border border-border/70 p-3 sm:p-3.5 shadow-xs space-y-3">
       {/* Controles Desktop */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {/* Selector de Rango Temporal */}
           <div className="relative inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden lg:inline-flex items-center gap-1 text-xs font-medium">
-              <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Período:
-            </span>
             <select
               value={`${selectedDateRange.start}|${selectedDateRange.end}`}
               onChange={(e) => {
@@ -88,7 +85,7 @@ export function BancaFilterBar({
                 onDateRangeChange({ start, end });
               }}
               aria-label="Filtrar por período"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
             >
               {DATE_PRESETS.map((p) => (
                 <option key={p.label} value={`${p.start}|${p.end}`}>
@@ -96,19 +93,17 @@ export function BancaFilterBar({
                 </option>
               ))}
             </select>
+            <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Selector de Producto */}
-          <div className="hidden sm:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Producto:
-            </span>
+          <div className="hidden sm:inline-flex items-center relative">
             <select
               value={selectedProducto || ''}
               onChange={(e) => onProductoChange(e.target.value || null)}
               aria-label="Filtrar por producto"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
             >
               <option value="">Todos los productos</option>
               {productos.map((p) => (
@@ -117,19 +112,17 @@ export function BancaFilterBar({
                 </option>
               ))}
             </select>
+            <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Selector de Segmento */}
-          <div className="hidden md:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Segmento:
-            </span>
+          <div className="hidden md:inline-flex items-center relative">
             <select
               value={selectedSegmento || ''}
               onChange={(e) => onSegmentoChange(e.target.value || null)}
               aria-label="Filtrar por segmento"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
             >
               <option value="">Todos los segmentos</option>
               {segmentos.map((s) => (
@@ -138,19 +131,17 @@ export function BancaFilterBar({
                 </option>
               ))}
             </select>
+            <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Selector de Región */}
-          <div className="hidden lg:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Región:
-            </span>
+          <div className="hidden lg:inline-flex items-center relative">
             <select
               value={selectedRegion || ''}
               onChange={(e) => onRegionChange(e.target.value || null)}
               aria-label="Filtrar por región"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
             >
               <option value="">Todas las regiones</option>
               {regiones.map((r) => (
@@ -159,13 +150,15 @@ export function BancaFilterBar({
                 </option>
               ))}
             </select>
+            <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Botón Móvil */}
           <button
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
-            className="md:hidden inline-flex items-center gap-1.5 text-xs h-9 px-3 rounded-lg border border-border bg-background text-foreground font-medium hover:bg-muted"
+            className="md:hidden inline-flex items-center gap-1.5 text-xs h-8.5 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Filtros</span>
@@ -174,20 +167,21 @@ export function BancaFilterBar({
         </div>
 
         {/* Lado derecho: Contador y Reset */}
-        <div className="flex items-center gap-3 ml-auto">
-          <div className="text-xs text-muted-foreground tabular-nums">
-            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span> de{' '}
-            <span>{formatNumber(totalCount)}</span> operaciones
+        <div className="flex items-center gap-2.5 ml-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
+            <span className="text-muted-foreground/80">/ {formatNumber(totalCount)}</span>
           </div>
 
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 py-1 px-2 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
+              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 py-1 px-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
-              <span className="hidden sm:inline">Limpiar filtros</span>
+              <span className="hidden sm:inline">Limpiar</span>
             </button>
           )}
         </div>

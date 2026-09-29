@@ -32,6 +32,8 @@ export function DonutChartCard({
   selectedChannel,
   onSelectChannel,
 }: DonutChartCardProps) {
+  const totalVentas = data.reduce((acc, curr) => acc + curr.ventas, 0);
+
   const tableColumns = [
     { key: 'canal', header: 'Canal', render: (r: ChannelData) => r.canal.toUpperCase() },
     { key: 'ventas', header: 'Ventas Netas', render: (r: ChannelData) => formatCLP(r.ventas), align: 'right' as const },
@@ -45,7 +47,7 @@ export function DonutChartCard({
       ariaLabel="Gráfico de donut de participación de ventas por canal"
       tableComponent={<DataTable data={data} columns={tableColumns} caption="Desglose por canal" />}
     >
-      <div className="h-[280px] w-full min-w-0 flex items-center justify-center">
+      <div className="h-[280px] w-full min-w-0 flex items-center justify-center relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
@@ -53,8 +55,8 @@ export function DonutChartCard({
                 if (active && payload && payload.length) {
                   const d = payload[0].payload as ChannelData;
                   return (
-                    <div className="rounded-lg border border-border bg-popover p-2.5 shadow-md text-xs text-popover-foreground">
-                      <p className="font-semibold text-foreground uppercase">{d.canal}</p>
+                    <div className="rounded-xl border border-border bg-popover/95 backdrop-blur-md p-2.5 shadow-lg text-xs text-popover-foreground">
+                      <p className="font-semibold text-foreground uppercase tracking-wide">{d.canal}</p>
                       <p className="text-muted-foreground mt-0.5">
                         Ventas: <strong className="text-blue-600 dark:text-blue-400 tabular-nums">{formatCLP(d.ventas)}</strong>
                       </p>
@@ -73,9 +75,9 @@ export function DonutChartCard({
               nameKey="canal"
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={85}
-              paddingAngle={4}
+              innerRadius={62}
+              outerRadius={92}
+              paddingAngle={3}
               onClick={(entry: unknown) => {
                 const item = entry as { canal?: string };
                 if (item?.canal) {
@@ -92,7 +94,7 @@ export function DonutChartCard({
                     key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}
                     opacity={isFilteredOut ? 0.35 : 1}
-                    stroke="hsl(var(--background))"
+                    stroke="hsl(var(--card))"
                     strokeWidth={2}
                   />
                 );
@@ -100,23 +102,35 @@ export function DonutChartCard({
             </Pie>
           </PieChart>
         </ResponsiveContainer>
+
+        {/* Centro del Donut: Total Consolidado */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-2">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+            Total Canal
+          </span>
+          <span className="text-base sm:text-lg font-black text-foreground tabular-nums tracking-tight">
+            {formatCLP(totalVentas, { compact: true })}
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center justify-center gap-4 text-xs pt-1">
+      <div className="flex items-center justify-center gap-4 text-xs pt-1 border-t border-border/50">
         {data.map((d, idx) => (
           <div
             key={d.canal}
             onClick={() => onSelectChannel?.(selectedChannel === d.canal ? null : d.canal)}
-            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded transition-all ${
-              selectedChannel === d.canal ? 'bg-muted font-bold' : 'hover:opacity-80'
+            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
+              selectedChannel === d.canal
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-semibold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span
-              className="w-2.5 h-2.5 rounded-full shrink-0"
+              className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: COLORS[idx % COLORS.length] }}
             />
             <span className="capitalize">{d.canal}:</span>
-            <span className="font-semibold tabular-nums">{formatPercent(d.porcentaje)}</span>
+            <span className="font-bold tabular-nums text-foreground">{formatPercent(d.porcentaje)}</span>
           </div>
         ))}
       </div>

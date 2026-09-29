@@ -44,3 +44,7 @@ coverage/
 # agent skills & local custom configs
 .agents/
 .agent/
+.claude/
+.minimax/
+.pi/
+skills-lock.json

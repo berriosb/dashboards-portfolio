@@ -15,7 +15,6 @@ import { ProductsBarCard } from './ProductsBarCard';
 import { CmfMoraLineCard } from './CmfMoraLineCard';
 import { BancaSegmentsDonutCard } from './BancaSegmentsDonutCard';
 import { BancaDrilldownDrawer } from './BancaDrilldownDrawer';
-import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ShareViewButton } from '@/components/ui/ShareViewButton';
 import { Landmark, FileSpreadsheet } from 'lucide-react';
@@ -97,7 +96,6 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
             Explorar Deudores y Créditos
           </button>
           <ShareViewButton />
-          <RepoLinkBadge repoName="banca-chile-datos" />
         </div>
       </div>
 

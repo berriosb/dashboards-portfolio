@@ -15,7 +15,6 @@ import { LeadTimeDistributionCard } from './LeadTimeDistributionCard';
 import { SupplierHhiCard } from './SupplierHhiCard';
 import { FailureReasonsCard } from './FailureReasonsCard';
 import { LogisticaDrilldownDrawer } from './LogisticaDrilldownDrawer';
-import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ShareViewButton } from '@/components/ui/ShareViewButton';
 import { Truck, FileText } from 'lucide-react';
@@ -100,7 +99,6 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
             Explorar Guías y Despachos
           </button>
           <ShareViewButton />
-          <RepoLinkBadge repoName="logistica-chile-datos" />
         </div>
       </div>
 

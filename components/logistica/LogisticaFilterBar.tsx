@@ -10,6 +10,7 @@ import {
   X,
   AlertTriangle,
   Package,
+  ChevronDown,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
@@ -76,16 +77,12 @@ export function LogisticaFilterBar({
     selectedDateRange.end !== '2026-09-30';
 
   return (
-    <div className="bg-card rounded-xl border border-border p-3.5 md:p-4 shadow-xs space-y-3">
+    <div className="bg-card/90 dark:bg-card/60 rounded-xl border border-border/70 p-3 sm:p-3.5 shadow-xs space-y-3">
       {/* Controles Desktop */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {/* Selector de Rango Temporal */}
           <div className="relative inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden lg:inline-flex items-center gap-1 text-xs font-medium">
-              <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              Período:
-            </span>
             <select
               value={`${selectedDateRange.start}|${selectedDateRange.end}`}
               onChange={(e) => {
@@ -93,7 +90,7 @@ export function LogisticaFilterBar({
                 onDateRangeChange({ start, end });
               }}
               aria-label="Filtrar por período"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
             >
               {DATE_PRESETS.map((p) => (
                 <option key={p.label} value={`${p.start}|${p.end}`}>
@@ -101,19 +98,17 @@ export function LogisticaFilterBar({
                 </option>
               ))}
             </select>
+            <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Selector de Ruta */}
-          <div className="hidden sm:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <Route className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              Ruta:
-            </span>
+          <div className="hidden sm:inline-flex items-center relative">
             <select
               value={selectedRuta || ''}
               onChange={(e) => onRutaChange(e.target.value || null)}
               aria-label="Filtrar por ruta"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer max-w-[160px] truncate"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer max-w-[170px] truncate shadow-2xs hover:border-foreground/30 transition-colors"
             >
               <option value="">Todas las rutas</option>
               {rutas.map((r) => (
@@ -122,19 +117,17 @@ export function LogisticaFilterBar({
                 </option>
               ))}
             </select>
+            <Route className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Selector de Transportista */}
-          <div className="hidden md:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <Truck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              Flota:
-            </span>
+          <div className="hidden md:inline-flex items-center relative">
             <select
               value={selectedTransportista || ''}
               onChange={(e) => onTransportistaChange(e.target.value || null)}
               aria-label="Filtrar por transportista"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer max-w-[150px] truncate"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer max-w-[160px] truncate shadow-2xs hover:border-foreground/30 transition-colors"
             >
               <option value="">Todas las flotas</option>
               {transportistas.map((t) => (
@@ -143,19 +136,21 @@ export function LogisticaFilterBar({
                 </option>
               ))}
             </select>
+            <Truck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Botón Solo Incidencias */}
           <button
             type="button"
             onClick={() => onSoloIncidenciasChange(!soloIncidencias)}
-            className={`hidden lg:inline-flex items-center gap-1.5 text-xs h-9 px-2.5 rounded-lg border transition-all ${
+            className={`hidden lg:inline-flex items-center gap-1.5 text-xs h-8.5 px-2.5 rounded-lg border transition-all ${
               soloIncidencias
-                ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-900 font-semibold'
-                : 'bg-background text-muted-foreground border-border hover:text-foreground'
+                ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-900 font-semibold shadow-xs'
+                : 'bg-background text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/50'
             }`}
           >
-            <AlertTriangle className="w-3.5 h-3.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
             <span>Solo fallas</span>
           </button>
 
@@ -163,7 +158,7 @@ export function LogisticaFilterBar({
           <button
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
-            className="md:hidden inline-flex items-center gap-1.5 text-xs h-9 px-3 rounded-lg border border-border bg-background text-foreground font-medium hover:bg-muted"
+            className="md:hidden inline-flex items-center gap-1.5 text-xs h-8.5 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Filtros</span>
@@ -172,20 +167,21 @@ export function LogisticaFilterBar({
         </div>
 
         {/* Lado derecho: Contador y Reset */}
-        <div className="flex items-center gap-3 ml-auto">
-          <div className="text-xs text-muted-foreground tabular-nums">
-            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span> de{' '}
-            <span>{formatNumber(totalCount)}</span> despachos
+        <div className="flex items-center gap-2.5 ml-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400" />
+            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
+            <span className="text-muted-foreground/80">/ {formatNumber(totalCount)}</span>
           </div>
 
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 py-1 px-2 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/50"
+              className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 py-1 px-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
-              <span className="hidden sm:inline">Limpiar filtros</span>
+              <span className="hidden sm:inline">Limpiar</span>
             </button>
           )}
         </div>

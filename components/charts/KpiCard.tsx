@@ -22,7 +22,6 @@ export function KpiCard({
   metricKey,
   benchmark,
   benchmarkSource,
-  highlightVariant = 'retail',
 }: KpiCardProps) {
   // Cálculo de delta porcentual
   let deltaPct: number | null = null;
@@ -33,14 +32,28 @@ export function KpiCard({
   // Formato del valor principal
   let formattedValue = '';
   if (unit === 'CLP') {
-    formattedValue = formatCLP(value);
+    if (Math.abs(value) >= 1_000_000_000) {
+      formattedValue = formatCLP(value, { compact: true });
+    } else {
+      formattedValue = formatCLP(value);
+    }
   } else if (unit === '%') {
     formattedValue = formatPercent(value);
   } else if (unit === 'pts') {
     formattedValue = `${Math.round(value)} pts`;
+  } else if (unit === 'hrs') {
+    formattedValue = `${value.toFixed(1)} hrs`;
   } else {
     formattedValue = formatNumber(value);
   }
+
+  // Calibración tipográfica responsiva para evitar desbordes en cifras largas
+  const textSizeClass =
+    formattedValue.length >= 10
+      ? 'text-lg sm:text-xl lg:text-[19px] xl:text-[18px]'
+      : formattedValue.length >= 8
+      ? 'text-xl sm:text-2xl lg:text-xl xl:text-xl'
+      : 'text-2xl sm:text-3xl lg:text-2xl xl:text-2xl';
 
   // Delta positivo o negativo
   const isPositive = deltaPct !== null && deltaPct > 0;
@@ -48,47 +61,47 @@ export function KpiCard({
   const isNeutral = deltaPct !== null && deltaPct === 0;
 
   return (
-    <div className="bg-card rounded-xl border border-border p-4 md:p-5 shadow-xs flex flex-col justify-between transition-all hover:border-border/80">
-      <div className="flex items-center justify-between gap-1 mb-2">
-        <span className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-1">
-          {label}
+    <div className="bg-card/90 dark:bg-card/60 rounded-xl border border-border/70 p-3.5 sm:p-4 shadow-xs flex flex-col justify-between transition-all duration-150 hover:border-border">
+      <div className="flex items-start justify-between gap-1 mb-1.5 min-w-0">
+        <span className="text-[11px] sm:text-xs font-medium text-muted-foreground flex items-center gap-1 leading-snug" title={label}>
+          <span>{label}</span>
           {metricKey && <GlossaryTooltip metricKey={metricKey} />}
         </span>
 
         {deltaPct !== null && (
           <div
-            className={`inline-flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded ${
+            className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1 py-0.5 rounded shrink-0 ${
               isPositive
                 ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
                 : isNegative
                 ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40'
                 : 'text-muted-foreground bg-muted'
             }`}
-            title={`Variación respecto al período anterior: ${deltaPct > 0 ? '+' : ''}${deltaPct}%`}
+            title={`Variación vs anterior: ${deltaPct > 0 ? '+' : ''}${deltaPct}%`}
           >
-            {isPositive && <ArrowUpRight className="w-3.5 h-3.5" />}
-            {isNegative && <ArrowDownRight className="w-3.5 h-3.5" />}
-            {isNeutral && <Minus className="w-3.5 h-3.5" />}
-            <span className="tabular-nums">
+            {isPositive && <ArrowUpRight className="w-2.5 h-2.5" />}
+            {isNegative && <ArrowDownRight className="w-2.5 h-2.5" />}
+            {isNeutral && <Minus className="w-2.5 h-2.5" />}
+            <span className="tabular-nums font-mono">
               {deltaPct > 0 ? `+${deltaPct}%` : `${deltaPct}%`}
             </span>
           </div>
         )}
       </div>
 
-      <div className="space-y-1 my-1">
-        <div className="text-2xl md:text-3xl font-bold tracking-tight text-foreground tabular-nums leading-none">
+      <div className="my-1">
+        <div className={`${textSizeClass} font-extrabold tracking-tight text-foreground tabular-nums leading-none truncate`}>
           {formattedValue}
         </div>
       </div>
 
       {benchmark !== undefined && (
-        <div className="pt-2.5 mt-1 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>
-            Meta: <strong className="text-foreground font-medium tabular-nums">{unit === 'CLP' ? formatCLP(benchmark) : `${benchmark}${unit}`}</strong>
+        <div className="pt-2 mt-1 border-t border-border/50 flex items-center justify-between text-[10.5px] text-muted-foreground gap-1">
+          <span className="truncate">
+            Meta: <strong className="text-foreground font-medium tabular-nums">{unit === 'CLP' ? formatCLP(benchmark, { compact: true }) : `${benchmark}${unit}`}</strong>
           </span>
           {benchmarkSource && (
-            <span className="truncate max-w-[120px] md:max-w-[150px] text-muted-foreground/75" title={benchmarkSource}>
+            <span className="truncate text-muted-foreground/75 text-[10px]" title={benchmarkSource}>
               {benchmarkSource}
             </span>
           )}

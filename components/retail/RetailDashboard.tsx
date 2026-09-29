@@ -16,7 +16,6 @@ import { DonutChartCard } from '@/components/charts/DonutChartCard';
 import { FunnelChartCard } from '@/components/charts/FunnelChartCard';
 import { RfmHeatmap } from '@/components/charts/RfmHeatmap';
 import { DrilldownDrawer } from './DrilldownDrawer';
-import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
 import { ShareViewButton } from '@/components/ui/ShareViewButton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
@@ -120,7 +119,6 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
             Explorar Clientes
           </button>
           <ShareViewButton />
-          <RepoLinkBadge repoName="retail-bi-chile" />
         </div>
       </div>
 

@@ -26,39 +26,24 @@ export function RfmHeatmap({
   // Encontrar el valor máximo de clientes para normalizar la escala de color
   const maxCount = Math.max(...matrix.map((c) => c.customerCount), 1);
 
-  // Paleta de intensidad basada en densidad de clientes
+  // Paleta de intensidad basada en densidad de clientes (monocromática azul según AGENTS.md)
   const getCellColor = (count: number, isSelected: boolean) => {
-    if (count === 0) return 'bg-muted/40 text-muted-foreground/50 border-dashed';
+    if (count === 0) return 'bg-muted/15 text-muted-foreground/30 border-dashed border-border/40';
     const ratio = count / maxCount;
 
     if (isSelected) {
-      return 'bg-blue-600 text-white font-bold ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900';
+      return 'bg-blue-600 text-white font-black ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-950 shadow-md scale-102';
     }
 
-    if (ratio > 0.75) return 'bg-blue-600 text-white font-semibold hover:bg-blue-700';
-    if (ratio > 0.5) return 'bg-blue-500 text-white font-semibold hover:bg-blue-600';
-    if (ratio > 0.25) return 'bg-blue-200 text-blue-900 font-medium hover:bg-blue-300 dark:bg-blue-900/60 dark:text-blue-100';
-    return 'bg-blue-50 text-blue-800 font-normal hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-200';
-  };
-
-  const getSegmentBadgeColor = (segment: string) => {
-    switch (segment) {
-      case 'Champions':
-        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
-      case 'Loyal':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
-      case 'Potential':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200';
-      case 'At Risk':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
-      default:
-        return 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200';
-    }
+    if (ratio > 0.75) return 'bg-blue-600 text-white font-black hover:bg-blue-700 border-blue-700 shadow-xs';
+    if (ratio > 0.5) return 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-blue-600';
+    if (ratio > 0.25) return 'bg-blue-100 text-blue-950 font-semibold hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-100 border-blue-200/60 dark:border-blue-800/40';
+    return 'bg-blue-50/70 text-blue-900 font-medium hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-200 border-blue-100 dark:border-blue-900/30';
   };
 
   return (
-    <div className="w-full flex flex-col space-y-3">
-      {/* Selector rápido de segmentos con badges */}
+    <div className="w-full flex flex-col space-y-3.5">
+      {/* Selector de segmentos unificado con paleta azul coherente */}
       <div className="flex items-center gap-1.5 flex-wrap text-xs">
         <span className="text-muted-foreground font-medium mr-1 text-[11px]">Segmentos:</span>
         {['Champions', 'Loyal', 'Potential', 'At Risk', 'Hibernating'].map((seg) => {
@@ -68,9 +53,11 @@ export function RfmHeatmap({
               key={seg}
               type="button"
               onClick={() => onSelectSegment?.(isActive ? null : seg)}
-              className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all ${getSegmentBadgeColor(
-                seg
-              )} ${isActive ? 'ring-2 ring-foreground/40 font-bold scale-105' : 'opacity-85 hover:opacity-100'}`}
+              className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
+                isActive
+                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted font-medium'
+              }`}
             >
               {seg}
             </button>
@@ -80,7 +67,7 @@ export function RfmHeatmap({
           <button
             type="button"
             onClick={() => onSelectSegment?.(null)}
-            className="text-[11px] text-muted-foreground hover:text-foreground underline ml-1"
+            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium ml-1"
           >
             Ver todos
           </button>
@@ -88,10 +75,10 @@ export function RfmHeatmap({
       </div>
 
       <TooltipPrimitive.Provider delayDuration={150}>
-        <div className="relative pt-2">
+        <div className="relative pt-1">
           {/* Eje Y: Recencia */}
           <div className="flex">
-            <div className="w-12 shrink-0 flex flex-col justify-around text-right pr-2 text-[10px] font-semibold text-muted-foreground">
+            <div className="w-12 shrink-0 flex flex-col justify-around text-right pr-2.5 text-[10px] font-semibold text-muted-foreground">
               <span title="Última compra hace ≤ 30 días">R5 (30d)</span>
               <span title="Última compra hace 31-60 días">R4 (60d)</span>
               <span title="Última compra hace 61-120 días">R3 (120d)</span>
@@ -100,7 +87,7 @@ export function RfmHeatmap({
             </div>
 
             {/* Matriz 5x5 */}
-            <div className="grid grid-cols-5 gap-1.5 flex-1 min-w-0">
+            <div className="grid grid-cols-5 gap-2 flex-1 min-w-0">
               {matrix.map((cell, idx) => {
                 const isSelected = selectedSegment === cell.segment;
                 const isFilteredOut = selectedSegment && !isSelected;
@@ -111,17 +98,17 @@ export function RfmHeatmap({
                       <button
                         type="button"
                         onClick={() => onSelectSegment?.(isSelected ? null : cell.segment)}
-                        className={`h-11 md:h-12 w-full rounded-md border border-border/70 flex flex-col items-center justify-center p-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${getCellColor(
+                        className={`h-12 md:h-13 w-full rounded-lg border flex flex-col items-center justify-center p-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer ${getCellColor(
                           cell.customerCount,
                           isSelected
-                        )} ${isFilteredOut ? 'opacity-35 grayscale-50' : 'opacity-100'}`}
+                        )} ${isFilteredOut ? 'opacity-25 grayscale' : 'opacity-100'}`}
                         aria-label={`R${cell.recency} F${cell.frequency}: ${cell.customerCount} clientes en ${cell.segment}`}
                       >
-                        <span className="text-xs md:text-sm tabular-nums leading-none">
+                        <span className="text-sm font-black tabular-nums leading-none">
                           {formatNumber(cell.customerCount)}
                         </span>
-                        <span className="text-[9px] uppercase tracking-tighter truncate max-w-full opacity-80 mt-0.5">
-                          {cell.segment.substring(0, 4)}
+                        <span className="text-[9px] uppercase tracking-tight truncate max-w-full opacity-80 mt-1 font-semibold">
+                          {cell.segment}
                         </span>
                       </button>
                     </TooltipPrimitive.Trigger>
@@ -129,31 +116,31 @@ export function RfmHeatmap({
                       <TooltipPrimitive.Content
                         side="top"
                         align="center"
-                        className="z-50 rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0"
-                        sideOffset={4}
+                        className="z-50 rounded-xl border border-border bg-popover/95 backdrop-blur-md p-3 text-xs text-popover-foreground shadow-lg animate-in fade-in-0"
+                        sideOffset={6}
                       >
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2 border-b border-border pb-1">
-                            <span className="font-semibold text-foreground">{cell.segment}</span>
-                            <span className="text-[10px] text-muted-foreground">
+                          <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-1.5">
+                            <span className="font-bold text-foreground">{cell.segment}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
                               R: {cell.recency}/5 · F: {cell.frequency}/5
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-x-3 text-muted-foreground pt-0.5">
-                            <span>Clientes:</span>
-                            <strong className="text-foreground text-right tabular-nums">
-                              {formatNumber(cell.customerCount)}
-                            </strong>
-                            <span>Ticket Promedio:</span>
-                            <strong className="text-foreground text-right tabular-nums">
-                              {cell.customerCount > 0 ? formatCLP(cell.avgTicket) : '-'}
-                            </strong>
+                          <div className="space-y-1 pt-0.5">
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Clientes:</span>
+                              <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                                {formatNumber(cell.customerCount)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="text-muted-foreground">Ticket Promedio:</span>
+                              <span className="font-semibold tabular-nums text-foreground">
+                                {formatCLP(cell.avgTicket)}
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-muted-foreground italic pt-1">
-                            {isSelected ? 'Haz clic para deseleccionar' : 'Haz clic para filtrar el dashboard'}
-                          </p>
                         </div>
-                        <TooltipPrimitive.Arrow className="fill-border" />
                       </TooltipPrimitive.Content>
                     </TooltipPrimitive.Portal>
                   </TooltipPrimitive.Root>
@@ -162,18 +149,16 @@ export function RfmHeatmap({
             </div>
           </div>
 
-          {/* Eje X: Frecuencia */}
-          <div className="flex pl-12 pt-1.5 text-[10px] font-semibold text-muted-foreground">
-            <div className="grid grid-cols-5 flex-1 text-center">
-              <span>F1 (1)</span>
-              <span>F2 (2)</span>
-              <span>F3 (3)</span>
-              <span>F4 (4-5)</span>
-              <span>F5 (6+)</span>
+          {/* Eje X: Frecuencia de Compra */}
+          <div className="flex pt-2">
+            <div className="w-12 shrink-0" />
+            <div className="grid grid-cols-5 gap-2 flex-1 text-center text-[10px] font-semibold text-muted-foreground">
+              <span>F1 (1 comp.)</span>
+              <span>F2 (2 comp.)</span>
+              <span>F3 (3-4 comp.)</span>
+              <span>F4 (5-7 comp.)</span>
+              <span>F5 (8+ comp.)</span>
             </div>
-          </div>
-          <div className="text-center text-[10px] text-muted-foreground font-medium pt-0.5">
-            Frecuencia de pedidos →
           </div>
         </div>
       </TooltipPrimitive.Provider>

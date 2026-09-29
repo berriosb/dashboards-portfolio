@@ -51,7 +51,7 @@ export function BarChartCard({
           <BarChart
             layout="vertical"
             data={data.slice(0, 8)}
-            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            margin={{ top: 14, right: 20, left: 8, bottom: 6 }}
           >
             <XAxis
               type="number"
@@ -66,14 +66,14 @@ export function BarChartCard({
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
-              width={85}
+              width={90}
             />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const d = payload[0].payload as CategoryData;
                   return (
-                    <div className="rounded-lg border border-border bg-popover p-2.5 shadow-md text-xs text-popover-foreground">
+                    <div className="rounded-xl border border-border bg-popover/95 backdrop-blur-md p-2.5 shadow-lg text-xs text-popover-foreground">
                       <p className="font-semibold text-foreground mb-1">{d.categoria}</p>
                       <div className="space-y-0.5">
                         <div className="flex items-center justify-between gap-4">
@@ -99,7 +99,8 @@ export function BarChartCard({
             />
             <Bar
               dataKey="ventas"
-              radius={[0, 4, 4, 0]}
+              radius={[0, 6, 6, 0]}
+              maxBarSize={22}
               onClick={(entry: unknown) => {
                 const item = entry as { categoria?: string };
                 if (item?.categoria) {

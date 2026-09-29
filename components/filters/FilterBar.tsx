@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   X,
   Users,
+  ChevronDown,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 import { MobileFilterSheet, DATE_PRESETS } from './MobileFilterSheet';
@@ -61,23 +62,18 @@ export function FilterBar({
     selectedDateRange.start !== '2025-10-01' ||
     selectedDateRange.end !== '2026-09-30';
 
-  // Encontrar el preset actual si coincide exactamente
   const currentPreset = DATE_PRESETS.find(
     (p) => p.start === selectedDateRange.start && p.end === selectedDateRange.end
   );
 
   return (
-    <div className="bg-card rounded-xl border border-border p-3.5 md:p-4 shadow-xs space-y-3">
+    <div className="bg-card/90 dark:bg-card/60 rounded-xl border border-border/70 p-3 sm:p-3.5 shadow-xs space-y-3">
       {/* Barra superior de controles */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Lado izquierdo: Controles principales desktop */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Selector de Rango Temporal */}
           <div className="relative inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden lg:inline-flex items-center gap-1 text-xs font-medium">
-              <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              Período:
-            </span>
             <select
               value={currentPreset ? `${currentPreset.start}|${currentPreset.end}` : 'custom'}
               onChange={(e) => {
@@ -88,7 +84,7 @@ export function FilterBar({
                 }
               }}
               aria-label="Seleccionar rango temporal"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer transition-colors shadow-2xs hover:border-foreground/30"
             >
               {DATE_PRESETS.map((p) => (
                 <option key={p.label} value={`${p.start}|${p.end}`}>
@@ -96,19 +92,17 @@ export function FilterBar({
                 </option>
               ))}
             </select>
+            <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
           {/* Selector de Categoría (Desktop) */}
-          <div className="hidden sm:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              Categoría:
-            </span>
+          <div className="hidden sm:inline-flex items-center relative">
             <select
               value={selectedCategory || ''}
               onChange={(e) => onCategoryChange(e.target.value || null)}
               aria-label="Filtrar por categoría"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer transition-colors shadow-2xs hover:border-foreground/30"
             >
               <option value="">Todas las categorías</option>
               {categories.map((c) => (
@@ -117,16 +111,18 @@ export function FilterBar({
                 </option>
               ))}
             </select>
+            <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
-          {/* Selector de Canal (Pills rápidos) */}
-          <div className="hidden md:inline-flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-xs">
+          {/* Selector de Canal (Segmented Control) */}
+          <div className="hidden md:inline-flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60 text-xs">
             <button
               type="button"
               onClick={() => onChannelChange(null)}
               className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                 selectedChannel === null
-                  ? 'bg-background text-foreground shadow-xs'
+                  ? 'bg-background text-foreground shadow-2xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -149,16 +145,12 @@ export function FilterBar({
           </div>
 
           {/* Selector de Región (Desktop) */}
-          <div className="hidden lg:inline-flex items-center">
-            <span className="text-muted-foreground mr-1.5 hidden xl:inline-flex items-center gap-1 text-xs font-medium">
-              <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              Región:
-            </span>
+          <div className="hidden lg:inline-flex items-center relative">
             <select
               value={selectedRegion || ''}
               onChange={(e) => onRegionChange(e.target.value || null)}
               aria-label="Filtrar por región"
-              className="text-xs h-9 px-2.5 rounded-lg border border-border bg-background text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
+              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer transition-colors shadow-2xs hover:border-foreground/30"
             >
               <option value="">Todas las regiones</option>
               {regions.map((r) => (
@@ -167,13 +159,15 @@ export function FilterBar({
                 </option>
               ))}
             </select>
+            <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 absolute left-2.5 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
           </div>
 
-          {/* Botón para pantallas móviles (< 768px) */}
+          {/* Botón para móviles (< 768px) */}
           <button
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
-            className="md:hidden inline-flex items-center gap-1.5 text-xs h-9 px-3 rounded-lg border border-border bg-background text-foreground font-medium hover:bg-muted transition-colors"
+            className="md:hidden inline-flex items-center gap-1.5 text-xs h-8.5 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted transition-colors"
             aria-label="Abrir panel de filtros avanzados"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -184,35 +178,36 @@ export function FilterBar({
           </button>
         </div>
 
-        {/* Lado derecho: Contador y Reset */}
-        <div className="flex items-center gap-3 ml-auto">
-          <div className="text-xs text-muted-foreground tabular-nums">
-            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span> de{' '}
-            <span>{formatNumber(totalCount)}</span> transacciones
+        {/* Lado derecho: Contador de Transacciones y Reset */}
+        <div className="flex items-center gap-2.5 ml-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
+            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
+            <span className="text-muted-foreground/80">/ {formatNumber(totalCount)}</span>
           </div>
 
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-2.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               title="Restablecer todos los filtros"
             >
               <RotateCcw className="w-3 h-3" />
-              <span className="hidden sm:inline">Limpiar filtros</span>
+              <span className="hidden sm:inline">Limpiar</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Chips de filtros activos (Cross-filtering badges) */}
+      {/* Chips de filtros activos */}
       {hasActiveFilters && (
-        <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60 text-xs">
+        <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/50 text-xs">
           <span className="text-[11px] text-muted-foreground font-medium">Activos:</span>
 
           {selectedCategory && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs">
-              <Layers className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+              <Layers className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <span>Categoría: <strong>{selectedCategory}</strong></span>
               <button
                 type="button"
@@ -226,8 +221,8 @@ export function FilterBar({
           )}
 
           {selectedChannel && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs capitalize">
-              <ShoppingBag className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs capitalize font-medium">
+              <ShoppingBag className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <span>Canal: <strong>{selectedChannel}</strong></span>
               <button
                 type="button"
@@ -241,8 +236,8 @@ export function FilterBar({
           )}
 
           {selectedRegion && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs">
-              <MapPin className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+              <MapPin className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <span>Región: <strong>{selectedRegion}</strong></span>
               <button
                 type="button"
@@ -256,14 +251,14 @@ export function FilterBar({
           )}
 
           {selectedRfmSegment && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs">
-              <Users className="w-3 h-3" />
-              <span>Segmento RFM: <strong>{selectedRfmSegment}</strong></span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+              <Users className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <span>RFM: <strong>{selectedRfmSegment}</strong></span>
               <button
                 type="button"
                 onClick={() => onRfmSegmentChange(null)}
                 className="hover:text-blue-950 dark:hover:text-white ml-0.5"
-                aria-label={`Eliminar filtro RFM ${selectedRfmSegment}`}
+                aria-label={`Eliminar filtro de segmento RFM ${selectedRfmSegment}`}
               >
                 <X className="w-3 h-3" />
               </button>
