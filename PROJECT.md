@@ -241,6 +241,140 @@ El showcase **no necesita repetir esa señal**. Su rol es distinto: vitrina visu
 | **Concentración de proveedores** (HHI treemap) | Cuota de mercado por proveedor | Top 20 proveedores |
 | **Costo por km** (line chart) | Evolución costo transporte | 12 meses |
 
+## Interactividad — qué filtros y capacidades tendrá cada dashboard
+
+**Decisión 2026-09-29:** Los 3 dashboards tendrán **interactividad nivel 2** (exploratory), basado en patrones de UX de Power BI / Tableau / Looker documentados en diseño de dashboards BI 2026.
+
+### Los 3 niveles de interactividad (referencia)
+
+| Nivel | Capacidad | Ejemplo |
+|---|---|---|
+| **Nivel 1: Display** | Solo lectura + selectores básicos (date picker, dropdowns) | Looker Studio, Infogram |
+| **Nivel 2: Exploratory** ⭐ | Cross-filtering + drill-down + comparison toggle | Power BI, Tableau, Metabase, Looker |
+| **Nivel 3: Generative** | Layout + charts + filtros generados desde texto | ThoughtSpot, Qlik Sense |
+
+**Vamos nivel 2**: lo que el 90% de los recruiters BI espera ver cuando abren un dashboard, sin meternos en AI/LLM todavía.
+
+### Capacidades de interactividad por dashboard
+
+Cada uno de los 3 dashboards tendrá las siguientes capacidades implementadas:
+
+#### 1. Filtro de rango de fechas (siempre presente)
+
+- **Tipo:** preset selector + custom date picker
+- **Presets:** "Últimos 7 días" / "Últimos 30 días" / "Este mes" / "Mes anterior" / "YTD" / "Custom"
+- **Implementación:** componente `<DateRangeFilter>` con shadcn Calendar + presets buttons
+- **Comportamiento:** todos los charts de la página filtran al cambiar
+- **Comparación:** toggle "Comparar con período anterior" (suma un dataset fantasma y muestra delta %)
+
+**Patrón UX (referencia Power BI / Metabase):**
+```
+[Este mes ▼] [Comparar ✓]   Showing: Sep 1 – Sep 30, 2026 vs Ago 1 – Ago 31, 2026
+```
+
+#### 2. Filtros de dimensión (segmentación)
+
+Cada dashboard tendrá 2-4 slicers de dimensión según su naturaleza:
+
+| Dashboard | Slicers |
+|---|---|
+| Retail | Categoría (multi-select), Región, Canal (online/tienda/ambos), Segmento cliente (nuevo/recurrente/VIP) |
+| Banca | Producto (consumo/hipotecario/comercial/tarjeta), Segmento (alto/medio/bajo valor), Sucursal, Mora bucket |
+| Logística | Ruta, Transportista, Tipo producto, Prioridad (estándar/express) |
+
+- **Tipo:** dropdown multi-select (shadcn `<MultiSelect>` o Command)
+- **Implementación:** estado en URL search params (`?categoria=hogar,tecnologia&canal=online`) para que los filtros sean compartibles
+- **Comportamiento:** charts refilterizan al cambiar; KPIs recalculan
+
+#### 3. Cross-filtering entre charts (lo más impactante)
+
+- **Patrón:** click en un bar/segment de cualquier chart → todos los demás charts de la página filtran a esa dimensión
+- **Visual feedback:** elemento clickeado se resalta, otros charts muestran contexto reducido
+- **Reset:** botón "Limpiar filtros" arriba a la derecha
+- **Implementación:** estado global con Zustand (`useDashboardFilters` hook) + listeners en cada chart
+
+**Ejemplo en retail:**
+- Click en la barra "Hogar" del chart de ventas por categoría → RFM heatmap muestra solo clientes que compraron hogar; funnel conversión muestra conversión de clientes de hogar; tendencia mensual muestra serie solo de hogar.
+- Click en una celda del RFM heatmap (segmento "Champions") → todos los demás charts filtran a ese segmento.
+
+#### 4. Drill-down en clicks (jerarquía de detalle)
+
+- **Patrón:** click en un elemento → drawer lateral derecho se abre con detalle
+- **Implementación:** shadcn `<Sheet>` (drawer) + datos cargados desde el JSON por id
+- **Reversible:** botón "Cerrar" obvio + breadcrumb visible
+
+**Drill-downs por dashboard:**
+
+| Dashboard | Click en | Abre drawer con |
+|---|---|---|
+| Retail | Categoría | Top 20 SKUs de la categoría, con precio, margen, unidades vendidas, link a "ver producto" |
+| Retail | Segmento RFM | Lista de 50 clientes del segmento, con última compra, ticket promedio, LTV estimado |
+| Banca | Producto | Aging de mora detalle (cuántos clientes en 30/60/90+), ticket promedio, tasa de aprobación |
+| Banca | Segmento | Distribución etaria, productos contratados, canal de adquisición |
+| Logística | Ruta | Volumen por transportista, %OTIF histórico, top 10 clientes de esa ruta |
+| Logística | Proveedor | Cuota HHI detalle, lead time P50/P90, incidentes del período |
+
+#### 5. Tooltips ricos (hover)
+
+- **Patrón:** tooltip custom que muestra contexto + valor + delta + sparkline mini
+- **Implementación:** `<Tooltip>` de Recharts con `<CustomTooltip>` que arma el contenido
+- **Contenido típico:**
+  ```
+  Marzo 2026
+  Ventas: $125.4M
+  vs Feb: +12.3% ↑
+  vs Mar 2025: +8.1% ↑
+  [▁▂▃▅▇▆▅▆▇]  ← sparkline 12 meses
+  ```
+
+#### 6. Comparación con período anterior
+
+- **Patrón:** cada KPI card muestra valor actual + delta % + sparkline
+- **Visual:** color verde/rojo según delta, ícono ↑/↓, tooltip explica qué se compara
+- **Implementación:** JSON incluye campo `previousValue` por cada KPI
+
+#### 7. Export / Share
+
+- **Export PNG:** botón en cada chart para descargar como PNG (vía `html-to-image` o `dom-to-image`)
+- **Share URL:** filtros actuales se serializan a URL params; botón "Compartir vista" copia el link
+- **Print friendly:** layout responsive que no rompe al imprimir
+
+### Patrones de layout (referencia dashboards BI)
+
+| Patrón | Cuándo usarlo | Aplicación |
+|---|---|---|
+| **F-pattern** | Dashboards densos con mucha data | Logística (15 rutas + 1000 envíos) |
+| **Z-pattern** | Dashboards simples con flujo narrativo | Retail (4 KPIs → 4 charts) |
+| **Grid 2x2 / 3x3** | Dashboards balanceados | Banca (KPIs + 4 charts balanceados) |
+
+**Regla de los 5-8 visuales por página** (Power BI best practice). Cada dashboard tendrá **6-8 visuales máximo**, no más.
+
+### Lo que NO vamos a hacer (consciente)
+
+| Feature descartada | Por qué |
+|---|---|
+| AI / LLM para generar charts | Complejo, fuera de scope showcase |
+| Real-time data via WebSocket | Innecesario con datos estáticos |
+| Anomaly detection automático | Requiere modelo, no es showcase |
+| Multi-tenant / auth | Showcase público, no producto |
+| Mobile native app | Web responsive es suficiente |
+| Comentarios colaborativos | Requiere backend |
+
+### Stack final para interactividad
+
+| Feature | Librería |
+|---|---|
+| Charts base | Recharts (144KB gzipped, 57M weekly downloads) |
+| Filtros | shadcn/ui Calendar + Command + Select |
+| Drawer | Shadcn Sheet (Radix UI) |
+| Estado compartido | Zustand 5 |
+| URL state | `nuqs` (sync con searchParams) |
+| Export PNG | `html-to-image` (~12KB) |
+| Animaciones | Framer Motion (~50KB, opcional) |
+| Tooltips custom | Custom Recharts `<Tooltip>` |
+
+**Bundle total estimado:** ~250-300KB gzipped, comparable con Tremor (~280KB) pero con más flexibilidad.
+
 ## Mapping a ofertas reales
 
 | Dashboard | Ofertas que ayuda a cerrar |
