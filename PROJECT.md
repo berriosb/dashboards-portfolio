@@ -39,7 +39,7 @@ A diferencia de los 3 repos técnicos (`retail-bi-chile`, `banca-chile-datos`, `
 | **Charts** | Recharts o Tremor (BI-grade) | Componentes hechos para BI, no libs genéricas |
 | **Data viz** | Lucide icons + Radix primitives | Consistencia visual |
 | **State** | Zustand 5 (si hace falta) | Solo si algún dashboard requiere interacción compleja |
-| **Deploy** | GitHub Pages via `next export` estático | Gratis, custom domain, sin config |
+| **Deploy** | **Vercel** (free tier) | Creado por el equipo de Next.js, soporte nativo, HTTPS + custom domain gratis, preview deploys por PR, $0/mes |
 | **Package manager** | pnpm 9 | Estándar del ecosistema Next.js |
 
 ## Estructura del proyecto
@@ -87,7 +87,59 @@ dashboards-portfolio/
 └── public/
     ├── og-image.png                 ← OpenGraph card
     └── favicon.svg
+
+## Deploy — Vercel (decidido)
+
+**Target de producción:** Vercel, conectado al repo `berriosb/dashboards-portfolio` en GitHub.
+
+### Por qué Vercel y no GitHub Pages / Netlify
+
+| Criterio | Vercel ⭐ | GitHub Pages | Netlify |
+|---|---|---|---|
+| Soporte Next.js nativo | ✅ First-class | ⚠️ Limitado (`next export`) | Bueno |
+| Routing (App Router, RSC) | ✅ Automático | ❌ Frágil | Bueno |
+| Deploy | `git push` y listo | Manual (build + push de `./out`) | `git push` + build config |
+| HTTPS + custom domain | ✅ Gratis + auto | ⚠️ Manual | ✅ Gratis + auto |
+| Preview deploys por PR | ✅ URL única por branch | ❌ No | ✅ Sí |
+| Edge network global | ✅ Optimizado para Next | CDN GitHub | Bueno |
+| Costo | $0/mes (100GB bandwidth) | $0 | $0/mes (100GB bandwidth) |
+| Lock-in | Bajo (Next.js corre donde sea) | Nulo | Bajo |
+
+**El factor decisivo:** Vercel es la empresa detrás de Next.js. Si algo no funciona, es bug de Vercel, no del setup. Para un showcase de portafolio es la opción sin fricción.
+
+### Setup (5 minutos una sola vez)
+
+**Opción A — vía web (recomendado para primer deploy):**
+1. Ir a https://vercel.com/new
+2. Conectar GitHub y seleccionar `berriosb/dashboards-portfolio`
+3. Vercel auto-detecta Next.js 16 + pnpm
+4. Deploy → URL: `https://dashboards-portfolio-berriosb.vercel.app`
+
+**Opción B — vía CLI:**
+```bash
+pnpm i -g vercel
+vercel login
+cd ~/Proyectos/dashboards-portfolio
+vercel              # primer deploy (preview)
+vercel --prod       # deploy a producción
 ```
+
+### URL objetivo
+
+- **Producción:** `https://dashboards-portfolio-berriosb.vercel.app`
+- **Custom domain (opcional):** si tenés `berriosb.cl`, mapear a `dashboards.berriosb.cl` gratis desde el dashboard de Vercel
+
+### Después de conectado
+
+- Cada `git push origin main` → deploy automático a producción
+- Cada PR → preview URL única (útil para mostrar a recruiters sin tocar main)
+- Dashboard de Vercel muestra deploys, bandwidth, errores en runtime
+
+### Riesgos eliminados vs GitHub Pages
+
+- ~~`next export` con `basePath: '/dashboards-portfolio'`~~ → Vercel rutea limpio
+- ~~404.html hack para SPA routing~~ → App Router funciona nativo
+- ~~Bundle estático pesado en `./out/`~~ → Vercel optimiza automático
 
 ## Datasets — qué muestra cada dashboard
 
@@ -172,25 +224,28 @@ berriosb/berriosb                       ← profile README (lista TODO)
 
 **Esfuerzo total estimado:** 2-3 días de trabajo focalizado.
 
-## Decisiones técnicas que necesito de vos
+## Decisiones técnicas
 
-| # | Decisión | Default sugerido |
-|---|---|---|
-| 1 | **Charts lib** | Recharts (más liviano, hecho para BI) |
-| 2 | **Landing style** | Cards con íconos Lucide + descripción + CTA |
-| 3 | **Tipografía** | Geist Sans (default Next 16) |
-| 4 | **Paleta** | 1 color por dashboard (retail=azul, banca=verde, logística=naranja) |
-| 5 | **Datos sintéticos** | Generados a mano en JSON estático (no Faker en runtime) |
-| 6 | **Multi-tenant** | No (es showcase, no producto) |
+| # | Decisión | Elección | Estado |
+|---|---|---|---|
+| 1 | **Charts lib** | Recharts (liviano, BI-grade) | ✅ Definido |
+| 2 | **Deploy target** | **Vercel** (free tier, soporte Next.js nativo) | ✅ **Definido 2026-09-29** |
+| 3 | **Landing style** | Cards con íconos Lucide + descripción + CTA | ⏳ Pendiente |
+| 4 | **Tipografía** | Geist Sans (default Next 16) | ⏳ Pendiente |
+| 5 | **Paleta** | 1 color por dashboard (retail=azul, banca=verde, logística=naranja) | ⏳ Pendiente |
+| 6 | **Datos sintéticos** | Generados a mano en JSON estático (no Faker en runtime) | ⏳ Pendiente |
 
 ## Riesgos identificados
 
-- **Build time en Next.js 16**: Si vas con `output: 'export'` no hay SSR, todo es estático. Verificar compatibilidad de Recharts/Tremor con build estático.
-- **GitHub Pages y rutas**: GitHub Pages no soporta SPA routing bien. Hay que usar `next export` con fallback o hash routing. **Decisión: probablemente mejor Netlify o Vercel gratis para esto.**
 - **Tamaño del bundle**: Recharts + Tremor pesan ~200KB. Aceptable para showcase, no para producción.
+- **Vercel free tier limits**: 100GB bandwidth/mes. Para un portafolio es más que suficiente; si un repo se viraliza y pasa eso, evaluar plan Pro ($20/mes) o self-host.
+- **Custom domain**: Si se quiere `dashboards.berriosb.cl` hay que tener el dominio registrado en NIC Chile o similar (no incluido en este plan).
 
 ## Lo que sigue
 
-1. Confirmar las decisiones técnicas de la tabla
-2. Decidir deploy target (GitHub Pages vs Netlify vs Vercel)
-3. Empezar Sprint 1 (init Next.js + landing + dashboard retail)
+1. ~~Confirmar las decisiones técnicas de la tabla~~ → Deploy definido como Vercel ✅
+2. ~~Decidir deploy target~~ → Vercel ✅
+3. Empezar Sprint 1: `pnpm create next-app` + landing + dashboard retail
+4. Conectar repo a Vercel y verificar primer deploy
+5. Sprint 2: banca + logística
+6. Sprint 3: polish + OG image + release

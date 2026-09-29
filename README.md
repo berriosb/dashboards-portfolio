@@ -23,7 +23,7 @@ Vitrine visual interactiva con 3 dashboards completos:
 | Estilos | Tailwind CSS 4 + shadcn/ui |
 | Charts | Recharts |
 | Iconos | Lucide |
-| Deploy | GitHub Pages / Netlify / Vercel |
+| **Deploy** | **Vercel** ([dashboards-portfolio-berriosb.vercel.app](https://vercel.com)) |
 | Package manager | pnpm |
 
 ## Estructura
@@ -52,12 +52,19 @@ pnpm dev
 
 ## Deploy
 
+Deploy target: **Vercel** ([setup completo en PROJECT.md](./PROJECT.md#deploy--vercel-decidido)).
+
 ```bash
+# Local
+pnpm install
+pnpm dev
+# → http://localhost:3000
+
+# Build de producción
 pnpm build
-# → output en ./out
 ```
 
-Subir `./out` a GitHub Pages, Netlify o Vercel.
+Deploy automático conectado a `main` → `https://dashboards-portfolio-berriosb.vercel.app`.
 
 ## Datos
 
