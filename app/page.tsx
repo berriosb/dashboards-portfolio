@@ -46,49 +46,49 @@ export default function Home() {
       id: 'banca',
       title: 'Banca & Riesgo Crediticio',
       industry: 'Servicios Financieros & Banca',
-      status: 'upcoming',
-      statusLabel: 'Sprint 2: Próximamente',
-      href: '#banca',
+      status: 'active',
+      statusLabel: 'Nivel 2: Activo',
+      href: '/banca',
       accentColor: 'emerald',
       description:
         'Gestión de cartera crediticia comercial y de consumo, mora temprana y tardía CMF, matrices de transición de riesgo y curvas vintage.',
       metrics: [
         { label: 'Cartera Vigente', value: '$1.420M CLP', note: 'Consumo y PyME' },
-        { label: 'Mora CMF 90+', value: '2,8%', note: 'Límite regulatorio: 3.5%' },
+        { label: 'Mora CMF 90+', value: '2,4%', note: 'Límite regulatorio: 1.0%' },
         { label: 'Concentración HHI', value: '1.240 pts', note: 'Rango diversificado' },
       ],
       features: [
         'Curvas vintage de cosechas de crédito (12 a 36 meses)',
-        'Matriz de migración de riesgo crediticio (Markov)',
+        'Diferenciación Mora 30+ CMF vs Mora 90+ Provisiones',
         'Cálculo de provisiones esperadas bajo IFRS 9',
-        'Índice de Herfindahl-Hirschman (HHI) por RUT y sector',
+        'Drill-down por deudor y crédito individual',
       ],
       benchmark: 'Comisión para el Mercado Financiero (CMF)',
-      cta: 'Disponible en Sprint 2',
+      cta: 'Abrir Dashboard Banca',
     },
     {
       id: 'logistica',
       title: 'Logística & Cadena de Suministro',
       industry: 'Distribución & Última Milla',
-      status: 'upcoming',
-      statusLabel: 'Sprint 2: Próximamente',
-      href: '#logistica',
+      status: 'active',
+      statusLabel: 'Nivel 2: Activo',
+      href: '/logistica',
       accentColor: 'amber',
       description:
         'Control operacional de despachos en la Región Metropolitana, cumplimiento de entregas OTIF, costos unitarios y quiebres de inventario.',
       metrics: [
-        { label: 'Cumplimiento OTIF', value: '94,2%', note: 'Meta EDI: 95%' },
-        { label: 'Costo por Entrega', value: '$3.850 CLP', note: 'Despacho promedio RM' },
-        { label: 'Tiempo de Ciclo', value: '18,4 hrs', note: 'Same-day & Next-day' },
+        { label: 'Cumplimiento OTIF', value: '89,4%', note: 'Meta EDI: 95%' },
+        { label: 'Lead Time P90', value: '38,0 hrs', note: 'Límite superior SLA' },
+        { label: 'HHI Proveedores', value: '1.820 pts', note: 'Concentración moderada' },
       ],
       features: [
-        'Heatmap de densidad y tiempos por comuna RM',
-        'Diagrama de Pareto de causas de entregas fallidas',
-        'Alertas de quiebre de stock de seguridad (ROP)',
-        'Monitoreo de SLAs de operadores logísticos externos',
+        'Cumplimiento OTIF desglosado por ruta de transporte',
+        'Distribución de lead times con percentiles P50 y P90',
+        'Concentración de flota HHI bajo umbral DOJ/FTC',
+        'Pareto de causas de fallas de entrega y drill-down',
       ],
       benchmark: 'Estándares EDI Logístico Chile & ASOEX',
-      cta: 'Disponible en Sprint 2',
+      cta: 'Abrir Dashboard Logística',
     },
   ];
 
@@ -245,7 +245,13 @@ export default function Home() {
                     {isActive ? (
                       <Link
                         href={dash.href}
-                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-xs"
+                        className={`w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-xs transition-all shadow-xs ${
+                          dash.accentColor === 'blue'
+                            ? 'bg-blue-600 hover:bg-blue-700'
+                            : dash.accentColor === 'emerald'
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : 'bg-amber-600 hover:bg-amber-700'
+                        }`}
                       >
                         <span>{dash.cta}</span>
                         <ArrowRight className="w-4 h-4" />

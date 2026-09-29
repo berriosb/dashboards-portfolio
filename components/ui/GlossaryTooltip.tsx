@@ -3,14 +3,14 @@
 import React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { Info } from 'lucide-react';
-import { RETAIL_METRICS } from '@/lib/metric-definitions';
+import { ALL_METRICS } from '@/lib/metric-definitions';
 
 interface GlossaryTooltipProps {
   metricKey: string;
 }
 
 export function GlossaryTooltip({ metricKey }: GlossaryTooltipProps) {
-  const metric = RETAIL_METRICS[metricKey];
+  const metric = ALL_METRICS[metricKey];
   if (!metric) return null;
 
   return (
