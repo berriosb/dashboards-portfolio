@@ -40,3 +40,7 @@ coverage/
 # scratch
 .handoff/
 .scratch/
+
+# agent skills & local custom configs
+.agents/
+.agent/

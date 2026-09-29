@@ -2,17 +2,19 @@
 
 > Showcase público de dashboards para el mercado chileno Data/BI.
 
-Vitrine visual interactiva con 3 dashboards completos:
+Vitrina visual interactiva con 3 dashboards:
 
-- 🛒 **Retail** — RFM, ticket, NPS, conversión
-- 🏦 **Banca** — KPIs CMF, captaciones, mora, churn
-- 🚚 **Logística** — OTIF, lead time, HHI proveedores, fill rate
+- 🛒 **Retail** — RFM, ticket, margen, conversión, NPS
+- 🏦 **Banca** — Mora CMF, captaciones, colocaciones, churn
+- 🚚 **Logística** — OTIF, lead time, concentración de proveedores, fill rate
+
+**Estado:** en construcción. Ver [PROJECT.md](./PROJECT.md) para el spec completo y el plan.
 
 ## Qué es (y qué no)
 
-**Es:** una demostración visual de dashboards interactivos sobre datos sintéticos del mercado chileno. Puro front-end, sin backend, sin auth.
+**Es:** una demostración visual de dashboards interactivos sobre **datos sintéticos** del mercado chileno. Puro front-end, sin backend, sin auth, sin datos reales.
 
-**No es:** un repositorio técnico con análisis reproducibles. Para eso están `retail-bi-chile`, `banca-chile-datos`, `logistica-chile-datos`.
+**No es:** un repositorio de análisis reproducibles. Para eso están [`retail-bi-chile`](https://github.com/berriosb), [`banca-chile-datos`](https://github.com/berriosb) y [`logistica-chile-datos`](https://github.com/berriosb), que tienen pipelines con Python + DuckDB.
 
 ## Stack
 
@@ -21,67 +23,58 @@ Vitrine visual interactiva con 3 dashboards completos:
 | Framework | Next.js 16 (App Router) + React 19 |
 | Lenguaje | TypeScript 5.7 strict |
 | Estilos | Tailwind CSS 4 + shadcn/ui |
-| Charts | Recharts |
+| Charts | Recharts 3.x |
 | Iconos | Lucide |
-| **Deploy** | **Vercel** ([dashboards-portfolio-berriosb.vercel.app](https://vercel.com)) |
+| Estado | nuqs (URL como fuente de verdad) + Zustand (UI) |
+| Tests | Vitest |
+| **Deploy** | **Vercel** — [dashboards-portfolio-berriosb.vercel.app](https://dashboards-portfolio-berriosb.vercel.app) |
 | Package manager | pnpm |
 
 ## Estructura
 
 ```
 dashboards-portfolio/
-├── app/
-│   ├── page.tsx              ← landing con 3 cards
-│   ├── retail/page.tsx       ← dashboard retail
-│   ├── banca/page.tsx        ← dashboard banca
-│   └── logistica/page.tsx    ← dashboard logística
+├── app/                     ← rutas (server) + providers cliente
+│   ├── page.tsx             ← landing con 3 cards
+│   ├── retail/page.tsx      ← dashboard retail
+│   ├── banca/page.tsx       ← dashboard banca
+│   └── logistica/page.tsx   ← dashboard logística
 ├── components/
-│   ├── charts/               ← wrappers Recharts
-│   └── cards/                ← DashboardCard
-├── data/                     ← datasets sintéticos (JSON embebidos)
-└── lib/                      ← format, constants
+│   ├── charts/              ← wrappers Recharts + ChartFrame accesible
+│   ├── cards/               ← DashboardCard
+│   └── insights/            ← InsightBanner
+├── data/                    ← datasets sintéticos (generados, no editados a mano)
+├── lib/                     ← data-engine, metric-definitions, rfm, format, dates
+├── scripts/                 ← generate-data (seed fijo) + check-data (invariantes)
+└── tests/                   ← invariantes de agregación y segmentación
 ```
 
 ## Quickstart
 
 ```bash
 pnpm install
+pnpm data:generate   # genera data/*.json de forma determinista
+pnpm data:check      # valida invariantes y reconcilia KPIs
 pnpm dev
 # → http://localhost:3000
 ```
-
-## Deploy
-
-Deploy target: **Vercel** ([setup completo en PROJECT.md](./PROJECT.md#deploy--vercel-decidido)).
-
-```bash
-# Local
-pnpm install
-pnpm dev
-# → http://localhost:3000
-
-# Build de producción
-pnpm build
-```
-
-Deploy automático conectado a `main` → `https://dashboards-portfolio-berriosb.vercel.app`.
 
 ## Datos
 
-**Fuente:** JSON estático embebido en `data/*.json`. Decisión documentada en [PROJECT.md](./PROJECT.md#fuente-de-datos-json-estático-embebido-decidido).
+**Todos los datasets son sintéticos y se generan por script con un seed fijo** (`scripts/generate-data.ts`), de modo que son reproducibles y sus cifras se reconcilian con los KPIs que muestra cada dashboard (`scripts/check-data.ts`).
 
-Todos los datasets son **sintéticos** y generados para reflejar patrones del mercado chileno (Ripley-like retail, BCO Falabella-like banca, Copec-like logística). Nada de datos reales ni privados.
+Los datos reflejan patrones del mercado chileno de retail, banca y logística. **No contienen información real, nombres de empresas reales, ni datos personales**: los identificadores (`CU-0412`) son sintéticos y cada dashboard muestra un badge "Datos sintéticos" con su fecha de corte.
 
-**Si en el futuro quieres filtros interactivos o live data**, la migración a Supabase es de ~1 hora (solo cambia el import de los datos). Por ahora la simplicidad gana.
+**Interactividad:** los filtros (cross-filtering, rangos de fechas, slicers) operan **100% en el cliente, en memoria**, con latencia sub-milisegundo y sin dependencias de red. El estado de los filtros vive en la URL, así que cualquier vista se puede compartir y abrir con los filtros ya aplicados.
 
-## Offer-mapping
+## Enlaces
 
-| Dashboard | Oferta que ayuda a cerrar |
+| | |
 |---|---|
-| Retail | Confidencial Retail (Analista BI Customer Insight, Las Condes, 2026-09-29) |
-| Banca | BancoEstado BECO (Analista Procesos, etapa 2 AIRA activo) |
-| Logística | Logística San Bernardo (Analista Datos BI, Ley 21.015, 2026-09-25) |
+| Spec completo | [PROJECT.md](./PROJECT.md) |
+| Definiciones de métricas | [PROJECT.md — data dictionary](./PROJECT.md#definiciones-de-métricas-data-dictionary) |
+| Criterios de aceptación | [PROJECT.md — Definition of Done](./PROJECT.md#criterios-de-aceptación-definition-of-done) |
 
 ## Licencia
 
-MIT
+MIT — ver [LICENSE](./LICENSE).
