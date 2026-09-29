@@ -1,0 +1,71 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Table, BarChart2 } from 'lucide-react';
+
+interface ChartFrameProps {
+  title: string;
+  description?: string;
+  badge?: string;
+  children: React.ReactNode;
+  tableComponent?: React.ReactNode;
+  headerAction?: React.ReactNode;
+  ariaLabel: string;
+}
+
+export function ChartFrame({
+  title,
+  description,
+  badge,
+  children,
+  tableComponent,
+  headerAction,
+  ariaLabel,
+}: ChartFrameProps) {
+  const [showTable, setShowTable] = useState(false);
+
+  return (
+    <div
+      className="bg-card rounded-xl border border-border p-4 md:p-5 shadow-xs flex flex-col justify-between min-w-0 w-full transition-all"
+      role="region"
+      aria-label={ariaLabel}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className="font-semibold text-foreground text-sm md:text-base tracking-tight">
+              {title}
+            </h4>
+            {badge && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground uppercase tracking-wider">
+                {badge}
+              </span>
+            )}
+          </div>
+          {description && (
+            <p className="text-xs text-muted-foreground leading-normal">{description}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          {headerAction}
+          {tableComponent && (
+            <button
+              type="button"
+              onClick={() => setShowTable(!showTable)}
+              className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              title={showTable ? 'Ver gráfico' : 'Ver tabla de datos'}
+              aria-label={showTable ? 'Ver gráfico' : 'Ver tabla accesible'}
+            >
+              {showTable ? <BarChart2 className="w-3.5 h-3.5" /> : <Table className="w-3.5 h-3.5" />}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="min-w-0 w-full flex-1 flex flex-col justify-center">
+        {showTable && tableComponent ? tableComponent : children}
+      </div>
+    </div>
+  );
+}
