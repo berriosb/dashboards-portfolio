@@ -26,7 +26,7 @@ A diferencia de los 3 repos técnicos (`retail-bi-chile`, `banca-chile-datos`, `
 
 - ✅ Una **landing page** con 3 cards (retail / banca / logística)
 - ✅ **3 dashboards interactivos** completos (uno por industria)
-- ✅ Deployado en GitHub Pages con dominio `berriosb.github.io/dashboards-portfolio`
+- ✅ Deployado en Vercel: `dashboards-portfolio-berriosb.vercel.app`
 - ✅ Linkeado desde el profile README `berriosb/berriosb` como primer item
 
 ## Stack — "el stack de oro"
