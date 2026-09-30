@@ -164,6 +164,7 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
           benchmark={2.5}
           benchmarkSource="Umbral alerta CMF"
           highlightVariant="banca"
+          trendDirection="lower-is-better"
         />
         <KpiCard
           label="Mora 90+ CMF"
@@ -174,6 +175,7 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
           benchmark={1.0}
           benchmarkSource="Gatillo provisión"
           highlightVariant="banca"
+          trendDirection="lower-is-better"
         />
         <KpiCard
           label="Captación Neta"

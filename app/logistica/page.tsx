@@ -6,6 +6,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { LogisticaDashboard } from '@/components/logistica/LogisticaDashboard';
 
+import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
+
 const logisticaData = logisticaDataRaw as unknown as LogisticaDataset;
 
 export const metadata: Metadata = {
@@ -27,13 +29,7 @@ export default function LogisticaPage() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-        <Suspense
-          fallback={
-            <div className="w-full h-96 flex items-center justify-center text-muted-foreground text-sm">
-              Cargando panel de logística y distribución...
-            </div>
-          }
-        >
+        <Suspense fallback={<DashboardSkeleton />}>
           <LogisticaDashboard dataset={logisticaData} />
         </Suspense>
       </main>

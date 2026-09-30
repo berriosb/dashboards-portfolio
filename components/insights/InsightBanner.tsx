@@ -14,58 +14,66 @@ export function InsightBanner({
   accionRecomendada,
   variant = 'retail',
 }: InsightBannerProps) {
-  const styles = {
+  const config = {
     retail: {
-      bg: 'bg-blue-50/60 dark:bg-blue-950/20',
-      border: 'border-blue-200 dark:border-blue-900/50',
-      iconBg: 'bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300',
-      badge: 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200',
-      actionText: 'text-blue-950 dark:text-blue-100',
+      badge: 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200/80 dark:border-blue-800/60',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      severity: 'Impacto Comercial',
     },
     banca: {
-      bg: 'bg-emerald-50/60 dark:bg-emerald-950/20',
-      border: 'border-emerald-200 dark:border-emerald-900/50',
-      iconBg: 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300',
-      badge: 'bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200',
-      actionText: 'text-emerald-950 dark:text-emerald-100',
+      badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      severity: 'Alerta Regulatoria CMF',
     },
     logistica: {
-      bg: 'bg-amber-50/60 dark:bg-amber-950/20',
-      border: 'border-amber-200 dark:border-amber-900/50',
-      iconBg: 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300',
-      badge: 'bg-amber-100/80 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200',
-      actionText: 'text-amber-950 dark:text-amber-100',
+      badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      severity: 'Eficiencia Operacional SLA',
     },
   }[variant];
 
   return (
     <div
-      className={`rounded-xl border ${styles.border} ${styles.bg} p-4 md:p-5 shadow-sm transition-all`}
+      className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-2xs transition-all"
       role="region"
-      aria-label="Hallazgo analítico clave"
+      aria-label="Resumen ejecutivo y hallazgo analítico"
     >
-      <div className="flex flex-col md:flex-row md:items-start gap-3.5">
-        <div className={`p-2 rounded-lg ${styles.iconBg} shrink-0 self-start`}>
-          <Lightbulb className="w-5 h-5" />
+      <div className="flex flex-col md:flex-row md:items-start gap-4">
+        {/* Ícono de Inteligencia de Negocio */}
+        <div className="w-8 h-8 rounded-lg bg-muted/80 border border-border/60 flex items-center justify-center shrink-0 self-start">
+          <Lightbulb className={`w-4 h-4 ${config.iconColor}`} />
         </div>
-        <div className="flex-1 space-y-1.5">
+
+        {/* Contenido Analítico */}
+        <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide uppercase ${styles.badge}`}>
-              Hallazgo Analítico
+            <span
+              className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase border font-mono ${config.badge}`}
+            >
+              {config.severity}
             </span>
-            <h3 className="font-semibold text-foreground text-sm md:text-base tracking-tight">
-              {titulo}
-            </h3>
+            <span className="text-[11px] text-muted-foreground font-medium">
+              Informe Analítico Automatizado
+            </span>
           </div>
-          <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+
+          <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight leading-snug">
+            {titulo}
+          </h3>
+
+          <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed text-pretty">
             {descripcion}
           </p>
-          <div className="pt-2 flex items-start sm:items-center gap-2 text-xs md:text-sm font-medium">
-            <span className="font-semibold text-foreground shrink-0 flex items-center gap-1">
-              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-              Acción recomendada:
-            </span>
-            <span className={`${styles.actionText} leading-tight`}>{accionRecomendada}</span>
+
+          {/* Bloque de Acción Ejecutiva Recomendada */}
+          <div className="mt-2.5 pt-2.5 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-muted/30 -mx-1 px-3 py-2 rounded-lg border">
+            <div className="flex items-start sm:items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1 font-semibold text-foreground shrink-0">
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                Decisión Sugerida:
+              </span>
+              <span className="text-foreground/90 font-medium leading-normal">{accionRecomendada}</span>
+            </div>
           </div>
         </div>
       </div>

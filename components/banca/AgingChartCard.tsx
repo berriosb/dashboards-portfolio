@@ -28,11 +28,11 @@ interface AgingChartCardProps {
 }
 
 const TRAMO_COLORS: Record<string, string> = {
-  'Al Día (0d)': '#059669', // emerald-600
-  'Mora 1-29d': '#f59e0b', // amber-500
-  'Mora 30-59d': '#d97706', // amber-600 (alerta CMF)
-  'Mora 60-89d': '#f43f5e', // rose-500
-  'Mora 90+d': '#be123c', // rose-700 (cartera deteriorada)
+  'Al Día (0d)': '#059669', // Cartera sana / vigente
+  'Mora 1-29d': '#64748b', // Atraso técnico / administrativo leve (slate neutro)
+  'Mora 30-59d': '#d97706', // Alerta temprana CMF (ámbar)
+  'Mora 60-89d': '#ea580c', // Riesgo alto previo a castigo (naranja intenso)
+  'Mora 90+d': '#be123c', // Cartera deteriorada / IFRS 9 (carmín crítico)
 };
 
 export function AgingChartCard({

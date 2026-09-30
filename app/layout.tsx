@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboards Showcase | BI & Data Portfolio Chile",
-  description: "Vitrina de dashboards interactivos de alto impacto para el mercado chileno de Data/BI: Retail, Banca y Logística.",
+  title: "OmniBI Suite | Enterprise Business Intelligence Chile",
+  description: "Plataforma analítica y vitrina de dashboards corporativos de alto impacto para Retail, Banca y Logística en Chile.",
 };
 
 export default function RootLayout({

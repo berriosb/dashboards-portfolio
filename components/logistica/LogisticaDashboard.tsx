@@ -159,6 +159,7 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
           benchmark={18.0}
           benchmarkSource="SLA compromiso estándar"
           highlightVariant="logistica"
+          trendDirection="lower-is-better"
         />
         <KpiCard
           label="Lead Time P90"
@@ -169,6 +170,7 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
           benchmark={36.0}
           benchmarkSource="Límite superior SLA"
           highlightVariant="logistica"
+          trendDirection="lower-is-better"
         />
         <KpiCard
           label="Fill Rate Volumen"
@@ -189,6 +191,7 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
           benchmark={45000}
           benchmarkSource="Presupuesto por flete"
           highlightVariant="logistica"
+          trendDirection="lower-is-better"
         />
         <KpiCard
           label="Concentración HHI"
