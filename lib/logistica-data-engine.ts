@@ -1,3 +1,5 @@
+import { describeWindow, type CompareMode, type WindowMeta } from './comparison';
+
 export interface DespachoRecord {
   id: string;
   ordenId: string;
@@ -113,7 +115,7 @@ function calculatePercentile(values: number[], percentile: number): number {
   return sorted[Math.max(0, Math.min(index, sorted.length - 1))];
 }
 
-export function filterAndAggregateLogistica(
+function aggregateLogistica(
   dataset: LogisticaDataset,
   filters: LogisticaFilterState
 ): LogisticaAggregatedResult {
@@ -288,4 +290,35 @@ export function filterAndAggregateLogistica(
     totalCount: dataset.records.length,
     filteredRecords,
   };
+}
+
+/**
+ * Ventana activa + ventana de comparación.
+ *
+ * `previousKpis` es `null` cuando no existe un período comparable dentro de la
+ * cobertura del dataset. En ese caso los KPIs se muestran SIN delta: es
+ * preferible no mostrar nada antes que inventar un 0,0% que se lee como
+ * "no se movió".
+ */
+export interface LogisticaAggregatedResultWithWindow extends LogisticaAggregatedResult {
+  window: WindowMeta;
+  previousKpis: LogisticaAggregatedResult['kpis'] | null;
+}
+
+export function filterAndAggregateLogistica(
+  dataset: LogisticaDataset,
+  filters: LogisticaFilterState,
+  opts: { compareMode?: CompareMode } = {}
+): LogisticaAggregatedResultWithWindow {
+  const current = aggregateLogistica(dataset, filters);
+  const window = describeWindow(filters.dateRange, dataset.meta, opts.compareMode);
+
+  let previousKpis: LogisticaAggregatedResult['kpis'] | null = null;
+  if (window.previous) {
+    // Se re-agregan los MISMOS filtros con la ventana anterior desplazada:
+    // el delta siempre es apples-to-apples, incluso con filtros por categoría.
+    previousKpis = aggregateLogistica(dataset, { ...filters, dateRange: window.previous }).kpis;
+  }
+
+  return { ...current, window, previousKpis };
 }
