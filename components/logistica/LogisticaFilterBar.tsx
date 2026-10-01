@@ -10,10 +10,13 @@ import {
   X,
   AlertTriangle,
   Package,
-  ChevronDown,
+  Clock,
 } from 'lucide-react';
-import { formatNumber } from '@/lib/format';
+import { formatDate, formatNumber } from '@/lib/format';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { FilterSelect } from '@/components/ui/FilterSelect';
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
+import type { DespachoRecord } from '@/lib/logistica-data-engine';
 
 interface LogisticaFilterBarProps {
   rutas: string[];
@@ -28,6 +31,7 @@ interface LogisticaFilterBarProps {
   selectedDateRange: { start: string; end: string };
   filteredCount: number;
   totalCount: number;
+  filteredRecords?: readonly DespachoRecord[];
   onRutaChange: (ruta: string | null) => void;
   onTransportistaChange: (transportista: string | null) => void;
   onTipoCargaChange: (tipo: string | null) => void;
@@ -37,7 +41,16 @@ interface LogisticaFilterBarProps {
   onResetFilters: () => void;
 }
 
+/**
+ * Ventana por defecto del dashboard de Logística.
+ *
+ * Debe coincidir con los `withDefault` de `nuqs` en `LogisticaDashboard.tsx`; si
+ * se desincroniza, la barra "Activos:" aparece vacía en la primera visita.
+ */
+const DEFAULT_DATE_RANGE = { start: '2026-04-01', end: '2026-09-30' } as const;
+
 const DATE_PRESETS = [
+  { label: 'Últimos 6 meses (abr-sep 26)', start: '2026-04-01', end: '2026-09-30' },
   { label: 'Todo el año (12m)', start: '2025-10-01', end: '2026-09-30' },
   { label: 'Últimos 90 días', start: '2026-07-01', end: '2026-09-30' },
   { label: 'Últimos 30 días', start: '2026-09-01', end: '2026-09-30' },
@@ -57,6 +70,7 @@ export function LogisticaFilterBar({
   selectedDateRange,
   filteredCount,
   totalCount,
+  filteredRecords = [] as DespachoRecord[],
   onRutaChange,
   onTransportistaChange,
   onTipoCargaChange,
@@ -67,77 +81,107 @@ export function LogisticaFilterBar({
 }: LogisticaFilterBarProps) {
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
+  const isDefaultDateRange =
+    selectedDateRange.start === DEFAULT_DATE_RANGE.start &&
+    selectedDateRange.end === DEFAULT_DATE_RANGE.end;
+
   const hasActiveFilters =
     selectedRuta !== null ||
     selectedTransportista !== null ||
     selectedTipoCarga !== null ||
     selectedPrioridad !== null ||
     soloIncidencias ||
-    selectedDateRange.start !== '2025-10-01' ||
-    selectedDateRange.end !== '2026-09-30';
+    !isDefaultDateRange;
+
+  const currentPreset = DATE_PRESETS.find(
+    (p) => p.start === selectedDateRange.start && p.end === selectedDateRange.end
+  );
+
+  /** Etiqueta legible del período, incluso si la ventana no calza con un preset. */
+  const dateRangeLabel =
+    currentPreset?.label ??
+    `${formatDate(selectedDateRange.start)} – ${formatDate(selectedDateRange.end)}`;
 
   return (
     <div className="bg-card/90 dark:bg-card/60 rounded-xl border border-border/70 p-3 sm:p-3.5 shadow-xs space-y-3">
       {/* Controles Desktop */}
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Controles Desktop con Radix UI */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Selector de Rango Temporal */}
-          <div className="relative inline-flex items-center">
-            <select
-              value={`${selectedDateRange.start}|${selectedDateRange.end}`}
-              onChange={(e) => {
-                const [start, end] = e.target.value.split('|');
+          <FilterSelect
+            value={`${selectedDateRange.start}|${selectedDateRange.end}`}
+            onChange={(val) => {
+              if (val) {
+                const [start, end] = val.split('|');
                 onDateRangeChange({ start, end });
-              }}
-              aria-label="Filtrar por período"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              {DATE_PRESETS.map((p) => (
-                <option key={p.label} value={`${p.start}|${p.end}`}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            <Calendar className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
-          </div>
+              }
+            }}
+            options={DATE_PRESETS.map((p) => ({
+              label: p.label,
+              value: `${p.start}|${p.end}`,
+            }))}
+            icon={Calendar}
+            placeholder="Período logístico"
+            fallbackLabel={dateRangeLabel}
+            ariaLabel="Filtrar por período"
+            accentColor="amber"
+          />
 
           {/* Selector de Ruta */}
-          <div className="hidden sm:inline-flex items-center relative">
-            <select
-              value={selectedRuta || ''}
-              onChange={(e) => onRutaChange(e.target.value || null)}
-              aria-label="Filtrar por ruta"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer max-w-[170px] truncate shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              <option value="">Todas las rutas</option>
-              {rutas.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <Route className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+          <div className="hidden sm:inline-flex">
+            <FilterSelect
+              value={selectedRuta}
+              onChange={onRutaChange}
+              options={rutas.map((r) => ({ label: r, value: r }))}
+              allLabel="Todas las rutas"
+              icon={Route}
+              placeholder="Ruta..."
+              ariaLabel="Filtrar por ruta"
+              accentColor="amber"
+            />
           </div>
 
           {/* Selector de Transportista */}
-          <div className="hidden md:inline-flex items-center relative">
-            <select
-              value={selectedTransportista || ''}
-              onChange={(e) => onTransportistaChange(e.target.value || null)}
-              aria-label="Filtrar por transportista"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer max-w-[160px] truncate shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              <option value="">Todas las flotas</option>
-              {transportistas.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <Truck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+          <div className="hidden md:inline-flex">
+            <FilterSelect
+              value={selectedTransportista}
+              onChange={onTransportistaChange}
+              options={transportistas.map((t) => ({ label: t, value: t }))}
+              allLabel="Todas las flotas"
+              icon={Truck}
+              placeholder="Transportista..."
+              ariaLabel="Filtrar por transportista"
+              accentColor="amber"
+            />
+          </div>
+
+          {/* Selector de Tipo de Carga */}
+          <div className="hidden lg:inline-flex">
+            <FilterSelect
+              value={selectedTipoCarga}
+              onChange={onTipoCargaChange}
+              options={tiposCarga.map((t) => ({ label: t, value: t }))}
+              allLabel="Todos los tipos"
+              icon={Package}
+              placeholder="Tipo de carga..."
+              ariaLabel="Filtrar por tipo de carga"
+              accentColor="amber"
+            />
+          </div>
+
+          {/* Selector de Prioridad de Servicio */}
+          <div className="hidden xl:inline-flex">
+            <FilterSelect
+              value={selectedPrioridad}
+              onChange={onPrioridadChange}
+              options={prioridades.map((p) => ({ label: p, value: p }))}
+              allLabel="Todas las prioridades"
+              icon={Clock}
+              placeholder="Prioridad..."
+              ariaLabel="Filtrar por prioridad de servicio"
+              accentColor="amber"
+            />
           </div>
 
           {/* Botón Solo Incidencias */}
@@ -158,7 +202,7 @@ export function LogisticaFilterBar({
           <button
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
-            className="md:hidden inline-flex items-center gap-1.5 text-xs h-8.5 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
+            className="md:hidden inline-flex items-center gap-1.5 text-xs min-h-11 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Filtros</span>
@@ -166,22 +210,29 @@ export function LogisticaFilterBar({
           </button>
         </div>
 
-        {/* Lado derecho: Contador y Reset */}
-        <div className="flex items-center gap-2.5 ml-auto">
+        {/* Lado derecho: Contador, Exportación CSV y Reset */}
+        <div className="flex items-center gap-2 ml-auto">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400" />
             <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
-            <span className="text-muted-foreground/80">/ {formatNumber(totalCount)}</span>
+            <span className="text-muted-foreground">/ {formatNumber(totalCount)}</span>
           </div>
+
+          {/* Exportación CSV instantánea */}
+          <ExportCsvButton
+            data={filteredRecords || []}
+            filename="logistica-despachos-filtrados"
+            label="CSV"
+          />
 
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 py-1 px-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium tap-target text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 min-h-11 px-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
-              <span className="hidden sm:inline">Limpiar</span>
+              <span className="sr-only sm:not-sr-only">Limpiar</span>
             </button>
           )}
         </div>
@@ -191,6 +242,20 @@ export function LogisticaFilterBar({
       {hasActiveFilters && (
         <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60 text-xs">
           <span className="text-[11px] text-muted-foreground font-medium">Activos:</span>
+
+          {!isDefaultDateRange && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
+              <Calendar className="w-3 h-3" />
+              <span className="tabular-nums">Período: <strong>{dateRangeLabel}</strong></span>
+              <button
+                type="button"
+                onClick={() => onDateRangeChange({ ...DEFAULT_DATE_RANGE })}
+                aria-label="Restablecer el período de análisis"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
 
           {selectedRuta && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
@@ -207,6 +272,26 @@ export function LogisticaFilterBar({
               <Truck className="w-3 h-3" />
               <span>Flota: <strong>{selectedTransportista}</strong></span>
               <button type="button" onClick={() => onTransportistaChange(null)}>
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+
+          {selectedTipoCarga && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
+              <Package className="w-3 h-3" />
+              <span>Carga: <strong>{selectedTipoCarga}</strong></span>
+              <button type="button" onClick={() => onTipoCargaChange(null)}>
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+
+          {selectedPrioridad && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
+              <Clock className="w-3 h-3" />
+              <span>Prioridad: <strong>{selectedPrioridad}</strong></span>
+              <button type="button" onClick={() => onPrioridadChange(null)}>
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -261,6 +346,38 @@ export function LogisticaFilterBar({
                 {transportistas.map((t) => (
                   <option key={t} value={t}>
                     {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="font-semibold text-foreground">Tipo de Carga</label>
+              <select
+                value={selectedTipoCarga || ''}
+                onChange={(e) => onTipoCargaChange(e.target.value || null)}
+                className="w-full h-10 px-3 rounded-lg border border-border bg-card"
+              >
+                <option value="">Todos los tipos de carga</option>
+                {tiposCarga.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="font-semibold text-foreground">Prioridad de Servicio</label>
+              <select
+                value={selectedPrioridad || ''}
+                onChange={(e) => onPrioridadChange(e.target.value || null)}
+                className="w-full h-10 px-3 rounded-lg border border-border bg-card"
+              >
+                <option value="">Todas las prioridades</option>
+                {prioridades.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
                   </option>
                 ))}
               </select>

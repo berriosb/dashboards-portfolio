@@ -9,6 +9,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
 import { ChartFrame } from './ChartFrame';
 import { DataTable } from './DataTable';
@@ -23,9 +24,22 @@ interface MonthlyData {
 
 interface LineChartCardProps {
   data: MonthlyData[];
+  /**
+   * Meta de ventas NETA **de un mes**, comparable punto a punto con
+   * `data[i].ventas`.
+   *
+   * Importante: la serie es mensual, así que la meta debe venir ya dividida por
+   * la cantidad de meses presentes en `data`. Pasar un acumulado de ventana
+   * (por ejemplo el total de 6 meses) dibuja la línea muy por encima del área
+   * y aplasta la curva contra el eje X. `null` omite la línea de meta.
+   */
+  metaMensual?: number | null;
+  metaLabel?: string;
+  /** Etiqueta del período visible, para que el título no prometa 12 meses fijos. */
+  periodoLabel?: string;
 }
 
-export function LineChartCard({ data }: LineChartCardProps) {
+export function LineChartCard({ data, metaMensual = null, metaLabel, periodoLabel }: LineChartCardProps) {
   const formatMonth = (mes: string) => {
     const parts = mes.split('-');
     if (parts.length < 2) return mes;
@@ -43,7 +57,11 @@ export function LineChartCard({ data }: LineChartCardProps) {
   return (
     <ChartFrame
       title="Tendencia Mensual de Ventas"
-      description="Evolución de facturación neta en CLP últimos 12 meses"
+      description={
+        periodoLabel
+          ? `Evolución de facturación neta en CLP · ${periodoLabel}`
+          : 'Evolución de facturación neta en CLP'
+      }
       ariaLabel="Gráfico de área de evolución mensual de ventas netas"
       tableComponent={<DataTable data={data} columns={tableColumns} caption="Ventas mensuales detalladas" />}
     >
@@ -99,7 +117,24 @@ export function LineChartCard({ data }: LineChartCardProps) {
                 }
                 return null;
               }}
+              cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
+            {/* Meta mensual: misma escala que `data[].ventas` (ver metaMensual) */}
+            {metaMensual !== null && metaMensual > 0 && (
+              <ReferenceLine
+                y={metaMensual}
+                stroke="#2563eb"
+                strokeDasharray="4 4"
+                opacity={0.65}
+                label={{
+                  value: metaLabel ?? `Meta ${formatCLP(metaMensual, { compact: true })}`,
+                  position: 'insideTopLeft',
+                  fill: '#2563eb',
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}
+              />
+            )}
             <Area
               type="monotone"
               dataKey="ventas"

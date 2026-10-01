@@ -10,10 +10,12 @@ import {
   SlidersHorizontal,
   X,
   AlertTriangle,
-  ChevronDown,
 } from 'lucide-react';
-import { formatNumber } from '@/lib/format';
+import { formatDate, formatNumber } from '@/lib/format';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { FilterSelect } from '@/components/ui/FilterSelect';
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
+import type { CreditoRecord } from '@/lib/banca-data-engine';
 
 interface BancaFilterBarProps {
   productos: string[];
@@ -27,6 +29,7 @@ interface BancaFilterBarProps {
   selectedDateRange: { start: string; end: string };
   filteredCount: number;
   totalCount: number;
+  filteredRecords?: readonly CreditoRecord[];
   onProductoChange: (producto: string | null) => void;
   onSegmentoChange: (segmento: string | null) => void;
   onRegionChange: (region: string | null) => void;
@@ -35,11 +38,33 @@ interface BancaFilterBarProps {
   onResetFilters: () => void;
 }
 
+/**
+ * Ventana por defecto del dashboard de Banca.
+ *
+ * Debe coincidir con los `withDefault` de `nuqs` en `BancaDashboard.tsx`; si se
+ * desincroniza, la barra "Activos:" aparece vacía en la primera visita.
+ */
+const DEFAULT_DATE_RANGE = { start: '2026-04-01', end: '2026-09-30' } as const;
+
+/**
+ * Presets alineados con la cobertura real del historial (2025-10 → 2026-09).
+ *
+ * La cartera es un STOCK: el motor resuelve el snapshot desde
+ * `historialCartera` usando el mes de `dateRange.end` (`mesReferencia`). Por eso
+ * los presets terminan en meses DISTINTOS: antes las cuatro ventanas cerraban en
+ * 2026-09 y devolvían exactamente el mismo `mesReferencia`, la misma
+ * `carteraTotal` y la misma mora, así que cambiar de período animaba el badge de
+ * delta sin mover ningún valor.
+ *
+ * Cada ventana cubre un trimestre calendario real y, salvo el más antiguo, tiene
+ * un período anterior comparable dentro del dataset para el cálculo del delta.
+ */
 const DATE_PRESETS = [
-  { label: 'Todo el ejercicio (12m)', start: '2024-01-01', end: '2027-12-31' },
-  { label: 'Otorgados 2026', start: '2026-01-01', end: '2026-09-30' },
-  { label: 'Otorgados 2025', start: '2025-01-01', end: '2025-12-31' },
-  { label: 'Otorgados 2024', start: '2024-01-01', end: '2024-12-31' },
+  { label: 'Últimos 6 meses (abr-sep 26)', start: '2026-04-01', end: '2026-09-30' },
+  { label: 'Trimestre Q2 26 (abr-jun)', start: '2026-04-01', end: '2026-06-30' },
+  { label: 'Trimestre Q1 26 (ene-mar)', start: '2026-01-01', end: '2026-03-31' },
+  { label: 'Trimestre Q4 25 (oct-dic)', start: '2025-10-01', end: '2025-12-31' },
+  { label: 'Todo el período (12m)', start: '2025-10-01', end: '2026-09-30' },
 ];
 
 export function BancaFilterBar({
@@ -54,6 +79,7 @@ export function BancaFilterBar({
   selectedDateRange,
   filteredCount,
   totalCount,
+  filteredRecords = [] as CreditoRecord[],
   onProductoChange,
   onSegmentoChange,
   onRegionChange,
@@ -63,102 +89,99 @@ export function BancaFilterBar({
 }: BancaFilterBarProps) {
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
+  const isDefaultDateRange =
+    selectedDateRange.start === DEFAULT_DATE_RANGE.start &&
+    selectedDateRange.end === DEFAULT_DATE_RANGE.end;
+
   const hasActiveFilters =
     selectedProducto !== null ||
     selectedSegmento !== null ||
     selectedRegion !== null ||
     selectedTramoMora !== null ||
-    selectedDateRange.start !== '2024-01-01' ||
-    selectedDateRange.end !== '2027-12-31';
+    !isDefaultDateRange;
+
+  const currentPreset = DATE_PRESETS.find(
+    (p) => p.start === selectedDateRange.start && p.end === selectedDateRange.end
+  );
+
+  /** Etiqueta legible del período, incluso si la ventana no calza con un preset. */
+  const dateRangeLabel =
+    currentPreset?.label ??
+    `${formatDate(selectedDateRange.start)} – ${formatDate(selectedDateRange.end)}`;
 
   return (
     <div className="bg-card/90 dark:bg-card/60 rounded-xl border border-border/70 p-3 sm:p-3.5 shadow-xs space-y-3">
       {/* Controles Desktop */}
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Controles Desktop con Radix UI */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Selector de Rango Temporal */}
-          <div className="relative inline-flex items-center">
-            <select
-              value={`${selectedDateRange.start}|${selectedDateRange.end}`}
-              onChange={(e) => {
-                const [start, end] = e.target.value.split('|');
+          <FilterSelect
+            value={`${selectedDateRange.start}|${selectedDateRange.end}`}
+            onChange={(val) => {
+              if (val) {
+                const [start, end] = val.split('|');
                 onDateRangeChange({ start, end });
-              }}
-              aria-label="Filtrar por período"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              {DATE_PRESETS.map((p) => (
-                <option key={p.label} value={`${p.start}|${p.end}`}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
-          </div>
+              }
+            }}
+            options={DATE_PRESETS.map((p) => ({
+              label: p.label,
+              value: `${p.start}|${p.end}`,
+            }))}
+            icon={Calendar}
+            placeholder="Período de cartera"
+            fallbackLabel={dateRangeLabel}
+            ariaLabel="Filtrar por período"
+            accentColor="emerald"
+          />
 
           {/* Selector de Producto */}
-          <div className="hidden sm:inline-flex items-center relative">
-            <select
-              value={selectedProducto || ''}
-              onChange={(e) => onProductoChange(e.target.value || null)}
-              aria-label="Filtrar por producto"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              <option value="">Todos los productos</option>
-              {productos.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+          <div className="hidden sm:inline-flex">
+            <FilterSelect
+              value={selectedProducto}
+              onChange={onProductoChange}
+              options={productos.map((p) => ({ label: p, value: p }))}
+              allLabel="Todos los productos"
+              icon={Layers}
+              placeholder="Producto..."
+              ariaLabel="Filtrar por producto"
+              accentColor="emerald"
+            />
           </div>
 
           {/* Selector de Segmento */}
-          <div className="hidden md:inline-flex items-center relative">
-            <select
-              value={selectedSegmento || ''}
-              onChange={(e) => onSegmentoChange(e.target.value || null)}
-              aria-label="Filtrar por segmento"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              <option value="">Todos los segmentos</option>
-              {segmentos.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+          <div className="hidden md:inline-flex">
+            <FilterSelect
+              value={selectedSegmento}
+              onChange={onSegmentoChange}
+              options={segmentos.map((s) => ({ label: s, value: s }))}
+              allLabel="Todos los segmentos"
+              icon={Users}
+              placeholder="Segmento..."
+              ariaLabel="Filtrar por segmento"
+              accentColor="emerald"
+            />
           </div>
 
           {/* Selector de Región */}
-          <div className="hidden lg:inline-flex items-center relative">
-            <select
-              value={selectedRegion || ''}
-              onChange={(e) => onRegionChange(e.target.value || null)}
-              aria-label="Filtrar por región"
-              className="text-xs h-8.5 pl-8 pr-7 rounded-lg border border-border/80 bg-background text-foreground font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs hover:border-foreground/30 transition-colors"
-            >
-              <option value="">Todas las regiones</option>
-              {regiones.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+          <div className="hidden lg:inline-flex">
+            <FilterSelect
+              value={selectedRegion}
+              onChange={onRegionChange}
+              options={regiones.map((r) => ({ label: r, value: r }))}
+              allLabel="Todas las regiones"
+              icon={MapPin}
+              placeholder="Región..."
+              ariaLabel="Filtrar por región"
+              accentColor="emerald"
+            />
           </div>
 
           {/* Botón Móvil */}
           <button
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
-            className="md:hidden inline-flex items-center gap-1.5 text-xs h-8.5 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
+            className="md:hidden inline-flex items-center gap-1.5 text-xs min-h-11 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Filtros</span>
@@ -166,22 +189,29 @@ export function BancaFilterBar({
           </button>
         </div>
 
-        {/* Lado derecho: Contador y Reset */}
-        <div className="flex items-center gap-2.5 ml-auto">
+        {/* Lado derecho: Contador, Exportación CSV y Reset */}
+        <div className="flex items-center gap-2 ml-auto">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
             <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
-            <span className="text-muted-foreground/80">/ {formatNumber(totalCount)}</span>
+            <span className="text-muted-foreground">/ {formatNumber(totalCount)}</span>
           </div>
+
+          {/* Exportación CSV instantánea */}
+          <ExportCsvButton
+            data={filteredRecords || []}
+            filename="banca-cartera-filtrada"
+            label="CSV"
+          />
 
           {hasActiveFilters && (
             <button
               type="button"
               onClick={onResetFilters}
-              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 py-1 px-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium tap-target text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 min-h-11 px-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
-              <span className="hidden sm:inline">Limpiar</span>
+              <span className="sr-only sm:not-sr-only">Limpiar</span>
             </button>
           )}
         </div>
@@ -191,6 +221,20 @@ export function BancaFilterBar({
       {hasActiveFilters && (
         <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60 text-xs">
           <span className="text-[11px] text-muted-foreground font-medium">Activos:</span>
+
+          {!isDefaultDateRange && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs">
+              <Calendar className="w-3 h-3" />
+              <span className="tabular-nums">Período: <strong>{dateRangeLabel}</strong></span>
+              <button
+                type="button"
+                onClick={() => onDateRangeChange({ ...DEFAULT_DATE_RANGE })}
+                aria-label="Restablecer el período de análisis"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
 
           {selectedProducto && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs">

@@ -7,6 +7,7 @@ import {
   filterAndAggregateBanca,
   BancaFilterState,
 } from '@/lib/banca-data-engine';
+import { resolveBenchmark, BANCA_METRICS } from '@/lib/metric-definitions';
 import { InsightBanner } from '@/components/insights/InsightBanner';
 import { BancaFilterBar } from './BancaFilterBar';
 import { KpiCard } from '@/components/charts/KpiCard';
@@ -17,6 +18,7 @@ import { BancaSegmentsDonutCard } from './BancaSegmentsDonutCard';
 import { BancaDrilldownDrawer } from './BancaDrilldownDrawer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ShareViewButton } from '@/components/ui/ShareViewButton';
+import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
 import { Landmark, FileSpreadsheet } from 'lucide-react';
 
 interface BancaDashboardProps {
@@ -25,8 +27,8 @@ interface BancaDashboardProps {
 
 export function BancaDashboard({ dataset }: BancaDashboardProps) {
   const [query, setQuery] = useQueryStates({
-    fechaInicio: parseAsString.withDefault('2024-01-01'),
-    fechaFin: parseAsString.withDefault('2027-12-31'),
+    fechaInicio: parseAsString.withDefault('2026-04-01'),
+    fechaFin: parseAsString.withDefault('2026-09-30'),
     producto: parseAsString,
     segmento: parseAsString,
     region: parseAsString,
@@ -53,10 +55,15 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
     return filterAndAggregateBanca(dataset, filterState);
   }, [dataset, filterState]);
 
+  // Benchmarks desde la fuente canónica (lib/metric-definitions.ts), prorateados
+  // a la ventana visible. La cartera es un stock: las metas de saldo y mora NO
+  // se proratean, sólo las de flujo como captación neta.
+  const meta = (key: string) => resolveBenchmark(key, aggregated.window.fraction, BANCA_METRICS);
+
   const handleResetFilters = () => {
     setQuery({
-      fechaInicio: '2024-01-01',
-      fechaFin: '2027-12-31',
+      fechaInicio: '2026-04-01',
+      fechaFin: '2026-09-30',
       producto: null,
       segmento: null,
       region: null,
@@ -86,11 +93,12 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto lg:justify-end">
+          <RepoLinkBadge repoName="banca-chile-datos" />
           <button
             type="button"
             onClick={() => setIsDrilldownOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 text-xs font-medium min-h-11 px-3 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-all shadow-xs"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Explorar Deudores y Créditos
@@ -123,6 +131,7 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
         }}
         filteredCount={aggregated.filteredCount}
         totalCount={aggregated.totalCount}
+        filteredRecords={aggregated.filteredRecords}
         onProductoChange={(producto) => setQuery({ producto })}
         onSegmentoChange={(segmento) => setQuery({ segmento })}
         onRegionChange={(region) => setQuery({ region })}
@@ -133,78 +142,93 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
         onResetFilters={handleResetFilters}
       />
 
-      {/* Grilla de KPIs Principales */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
-        <KpiCard
-          label="Cartera Total"
-          value={aggregated.kpis.carteraTotal}
-          previousValue={Math.round(aggregated.kpis.carteraTotal * 0.94)}
-          unit="CLP"
-          metricKey="carteraTotal"
-          benchmark={1500000000}
-          benchmarkSource="Meta CMF"
-          highlightVariant="banca"
-        />
-        <KpiCard
-          label="Cartera Vigente"
-          value={aggregated.kpis.carteraVigente}
-          previousValue={Math.round(aggregated.kpis.carteraVigente * 0.95)}
-          unit="CLP"
-          metricKey="carteraVigente"
-          benchmark={1400000000}
-          benchmarkSource="Calidad activos"
-          highlightVariant="banca"
-        />
-        <KpiCard
-          label="Mora 30+ CMF"
-          value={aggregated.kpis.moraCarteraPct}
-          previousValue={2.1}
-          unit="%"
-          metricKey="moraCarteraPct"
-          benchmark={2.5}
-          benchmarkSource="Umbral alerta CMF"
-          highlightVariant="banca"
-          trendDirection="lower-is-better"
-        />
-        <KpiCard
-          label="Mora 90+ CMF"
-          value={aggregated.kpis.moraVencida90Pct}
-          previousValue={0.95}
-          unit="%"
-          metricKey="moraVencida90Pct"
-          benchmark={1.0}
-          benchmarkSource="Gatillo provisión"
-          highlightVariant="banca"
-          trendDirection="lower-is-better"
-        />
-        <KpiCard
-          label="Captación Neta"
-          value={aggregated.kpis.captacionNeta}
-          unit="CLP"
-          metricKey="captacionNeta"
-          benchmark={250000000}
-          benchmarkSource="Meta liquidez"
-          highlightVariant="banca"
-        />
-        <KpiCard
-          label="Cobertura Provisión"
-          value={aggregated.kpis.coberturaProvisiones}
-          previousValue={142}
-          unit="%"
-          metricKey="coberturaProvisiones"
-          benchmark={130}
-          benchmarkSource="Estándar IFRS 9"
-          highlightVariant="banca"
-        />
-        <div className="col-span-2 sm:col-span-1">
+      {/* KPIs Ejecutivos con Arquitectura de 2 Niveles */}
+      <div className="space-y-3.5">
+        {/* Tier 1: North Star Metrics (3 Hero Cards con Sparklines y Progreso de Meta) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+          <KpiCard
+            isHero
+            label="Cartera Total"
+            value={aggregated.kpis.carteraTotal}
+            previousValue={aggregated.previousKpis?.carteraTotal ?? null}
+            unit="CLP"
+            metricKey="carteraTotal"
+            benchmark={meta('carteraTotal')?.value ?? null}
+            benchmarkSource={meta('carteraTotal')?.source}
+            highlightVariant="banca"
+            sparklineData={aggregated.tendenciaMoraMensual.map((m) => m.saldoPromedioMensual)}
+          />
+          <KpiCard
+            isHero
+            label="Mora 90+ CMF"
+            value={aggregated.kpis.moraVencida90Pct}
+            previousValue={aggregated.previousKpis?.moraVencida90Pct ?? null}
+            unit="%"
+            metricKey="moraVencida90Pct"
+            benchmark={meta('moraVencida90Pct')?.value ?? null}
+            benchmarkSource={meta('moraVencida90Pct')?.source}
+            highlightVariant="banca"
+            trendDirection="lower-is-better"
+            sparklineData={aggregated.tendenciaMoraMensual.map((m) => m.mora90Pct)}
+          />
+          <KpiCard
+            isHero
+            label="Cobertura Provisión"
+            value={aggregated.kpis.coberturaProvisiones}
+            previousValue={aggregated.previousKpis?.coberturaProvisiones ?? null}
+            unit="%"
+            metricKey="coberturaProvisiones"
+            benchmark={meta('coberturaProvisiones')?.value ?? null}
+            benchmarkSource={meta('coberturaProvisiones')?.source}
+            highlightVariant="banca"
+            // Antes era un array fijo [132, 134, 136, ...] dibujado a mano.
+            sparklineData={aggregated.tendenciaMoraMensual.map((m) => m.coberturaPct)}
+          />
+        </div>
+
+        {/* Tier 2: Operational Health Strip (4 Métricas Secundarias en Grid Balanceado) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-3.5">
+          <KpiCard
+            label="Cartera Vigente"
+            value={aggregated.kpis.carteraVigente}
+            previousValue={aggregated.previousKpis?.carteraVigente ?? null}
+            unit="CLP"
+            metricKey="carteraVigente"
+            benchmark={meta('carteraVigente')?.value ?? null}
+            benchmarkSource={meta('carteraVigente')?.source}
+            highlightVariant="banca"
+          />
+          <KpiCard
+            label="Mora 30+ CMF"
+            value={aggregated.kpis.moraCarteraPct}
+            previousValue={aggregated.previousKpis?.moraCarteraPct ?? null}
+            unit="%"
+            metricKey="moraCarteraPct"
+            benchmark={meta('moraCarteraPct')?.value ?? null}
+            benchmarkSource={meta('moraCarteraPct')?.source}
+            highlightVariant="banca"
+            trendDirection="lower-is-better"
+          />
+          <KpiCard
+            label="Captación Neta"
+            value={aggregated.kpis.captacionNeta}
+            unit="CLP"
+            metricKey="captacionNeta"
+            previousValue={aggregated.previousKpis?.captacionNeta ?? null}
+            benchmark={meta('captacionNeta')?.value ?? null}
+            benchmarkSource={meta('captacionNeta')?.source}
+            benchmarkLabel={meta('captacionNeta')?.label}
+            benchmarkProrated={meta('captacionNeta')?.prorated}
+            highlightVariant="banca"
+          />
           <KpiCard
             label="ROE Anualizado"
             value={aggregated.kpis.roe}
-            previousValue={14.8}
+            previousValue={aggregated.previousKpis?.roe ?? null}
             unit="%"
             metricKey="roe"
-            benchmark={14.5}
-            benchmarkSource="Promedio banca CL"
+            benchmark={meta('roe')?.value ?? null}
+            benchmarkSource={meta('roe')?.source}
             highlightVariant="banca"
           />
         </div>

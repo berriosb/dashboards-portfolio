@@ -10,7 +10,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { RotateCcw, Filter, Calendar, Layers, MapPin, ShoppingBag } from 'lucide-react';
-import { formatNumber } from '@/lib/format';
+import { formatDate, formatNumber } from '@/lib/format';
 
 interface MobileFilterSheetProps {
   isOpen: boolean;
@@ -33,14 +33,24 @@ interface MobileFilterSheetProps {
   onResetFilters: () => void;
 }
 
+/**
+ * Ventana por defecto del dashboard de Retail.
+ *
+ * Debe coincidir con los `withDefault` de `nuqs` en `RetailDashboard.tsx`. Si
+ * se desincroniza, la barra "Activos:" aparece vacía en la primera visita o el
+ * trigger de fecha queda sin etiqueta, porque ningún preset calza con la
+ * ventana inicial.
+ */
+export const DEFAULT_DATE_RANGE = { start: '2026-04-01', end: '2026-09-30' } as const;
+
 export const DATE_PRESETS = [
+  { label: 'Últimos 6 meses (abr-sep 26)', start: DEFAULT_DATE_RANGE.start, end: DEFAULT_DATE_RANGE.end },
   { label: 'Todo el año (12m)', start: '2025-10-01', end: '2026-09-30' },
-  { label: 'Últimos 90 días', start: '2026-07-01', end: '2026-09-30' },
+  { label: 'Últimos 90 días (Q4)', start: '2026-07-01', end: '2026-09-30' },
   { label: 'Últimos 30 días', start: '2026-09-01', end: '2026-09-30' },
   { label: 'Q1 (Oct-Dic 25)', start: '2025-10-01', end: '2025-12-31' },
   { label: 'Q2 (Ene-Mar 26)', start: '2026-01-01', end: '2026-03-31' },
   { label: 'Q3 (Abr-Jun 26)', start: '2026-04-01', end: '2026-06-30' },
-  { label: 'Q4 (Jul-Sep 26)', start: '2026-07-01', end: '2026-09-30' },
 ];
 
 export function MobileFilterSheet({
@@ -63,13 +73,24 @@ export function MobileFilterSheet({
   onRfmSegmentChange,
   onResetFilters,
 }: MobileFilterSheetProps) {
+  const isDefaultDateRange =
+    selectedDateRange.start === DEFAULT_DATE_RANGE.start &&
+    selectedDateRange.end === DEFAULT_DATE_RANGE.end;
+
   const hasActiveFilters =
     selectedCategory !== null ||
     selectedChannel !== null ||
     selectedRegion !== null ||
     selectedRfmSegment !== null ||
-    selectedDateRange.start !== '2025-10-01' ||
-    selectedDateRange.end !== '2026-09-30';
+    !isDefaultDateRange;
+
+  const currentPreset = DATE_PRESETS.find(
+    (p) => p.start === selectedDateRange.start && p.end === selectedDateRange.end
+  );
+
+  const dateRangeLabel =
+    currentPreset?.label ??
+    `${formatDate(selectedDateRange.start)} – ${formatDate(selectedDateRange.end)}`;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -119,6 +140,10 @@ export function MobileFilterSheet({
                 );
               })}
             </div>
+            <p className="text-[11px] text-muted-foreground tabular-nums">
+              Período visible:{' '}
+              <span className="font-medium text-foreground">{dateRangeLabel}</span>
+            </p>
           </div>
 
           {/* Categoría */}
