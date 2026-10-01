@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useLayoutEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Sheet,
   SheetContent,
@@ -8,7 +9,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { formatCLP } from '@/lib/format';
+import { formatCLP, formatNumber } from '@/lib/format';
 import { Search, Truck, ArrowUpDown, CheckCircle2, AlertCircle } from 'lucide-react';
 import { DespachoRecord } from '@/lib/logistica-data-engine';
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
@@ -55,6 +56,25 @@ export function LogisticaDrilldownDrawer({
       sortField === 'leadTime' ? b.horasLeadTime - a.horasLeadTime : b.costo - a.costo
     );
   }, [filteredRecords, selectedRuta, selectedTransportista, searchTerm, sortField]);
+
+  // Mismo criterio que Banca: la lista completa de despachos es alcanzable
+  // por scroll sin renderizar 1.000 <tr>. Antes solo se pintaban 100.
+  // Mismo patrón que Banca: el elemento de scroll en estado, no en ref, porque
+  // useVirtualizer solo lo engancha en un render posterior al que Radix monta
+  // el contenido del Sheet.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+  const FILAS_POR_COLUMNA = '2.2fr 1.1fr 1fr 0.9fr 1fr';
+
+  const virtualizador = useVirtualizer({
+    count: displayRecords.length,
+    getScrollElement: () => scrollEl,
+    estimateSize: () => 41,
+    overscan: 12,
+  });
+
+  useLayoutEffect(() => {
+    if (scrollEl) virtualizador.measure();
+  }, [scrollEl, virtualizador]);
 
   const maxLeadTime = useMemo(
     () => Math.max(...displayRecords.map((r) => r.horasLeadTime), 1),
@@ -140,11 +160,19 @@ export function LogisticaDrilldownDrawer({
           </div>
         </div>
 
-        {/* Tabla de Resultados */}
-        <div className="flex-1 overflow-y-auto border border-border rounded-xl">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-muted/50 sticky top-0 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
-              <tr>
+        {/* Tabla de Resultados. Virtualizada, igual que Banca: sin esto 900 de
+            los 1.000 despachos quedaban inalcanzables. `aria-rowcount` va en el
+            <table> porque no está soportado en el rowgroup implícito del tbody. */}
+        <div ref={setScrollEl} className="flex-1 overflow-y-auto border border-border rounded-xl">
+          <table
+            className="w-full text-left text-xs border-collapse"
+            aria-rowcount={displayRecords.length}
+          >
+            <thead
+              className="bg-muted/50 sticky top-0 z-10 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider"
+              style={{ display: 'grid' }}
+            >
+              <tr style={{ display: 'grid', gridTemplateColumns: FILAS_POR_COLUMNA }}>
                 <th className="py-2.5 px-3 font-semibold">Guía / Cliente</th>
                 <th className="py-2.5 px-3 font-semibold">Ruta / Flota</th>
                 <th className="py-2.5 px-3 font-semibold text-right">Lead Time</th>
@@ -152,65 +180,88 @@ export function LogisticaDrilldownDrawer({
                 <th className="py-2.5 px-3 font-semibold text-right">Costo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
-              {displayRecords.slice(0, 100).map((d) => (
-                <tr key={d.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="py-2 px-3">
-                    <div className="font-medium text-foreground">{d.cliente}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono">
-                      {d.id} · {d.ordenId}
-                    </div>
-                  </td>
-                  <td className="py-2 px-3">
-                    <div className="font-medium text-foreground">{d.ruta}</div>
-                    <div className="text-[10px] text-muted-foreground">{d.transportista}</div>
-                  </td>
-                  <td className="py-2 px-3 text-right tabular-nums font-semibold relative">
-                    <div
-                      className="absolute inset-y-1 right-1 bg-amber-500/10 dark:bg-amber-400/15 rounded-sm pointer-events-none transition-all duration-300"
-                      style={{ width: `${Math.min(100, Math.max(0, (d.horasLeadTime / maxLeadTime) * 100))}%` }}
-                    />
-                    <span className="relative z-10">{d.horasLeadTime}h</span>
-                  </td>
-                  <td className="py-2 px-3 text-center">
-                    {d.otif ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                        <CheckCircle2 className="w-3 h-3" />
-                        OTIF
-                      </span>
-                    ) : (
-                      <span
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                        title={d.incidencia || 'Entrega fuera de SLA'}
-                      >
-                        <AlertCircle className="w-3 h-3" />
-                        Falla
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-right tabular-nums text-foreground font-medium">
-                    {formatCLP(d.costo)}
-                  </td>
-                </tr>
-              ))}
-              {displayRecords.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No se encontraron despachos para los filtros seleccionados.
-                  </td>
-                </tr>
-              )}
+            <tbody
+              className="divide-y divide-border/60"
+              style={{
+                display: 'grid',
+                height: `${virtualizador.getTotalSize()}px`,
+                position: 'relative',
+                width: '100%',
+              }}
+            >
+              {virtualizador.getVirtualItems().map((filaVirtual) => {
+                const d = displayRecords[filaVirtual.index];
+                return (
+                  <tr
+                    key={d.id}
+                    aria-rowindex={filaVirtual.index + 2}
+                    className="hover:bg-muted/30 transition-colors"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: FILAS_POR_COLUMNA,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${filaVirtual.size}px`,
+                      transform: `translateY(${filaVirtual.start}px)`,
+                    }}
+                  >
+                    <td className="py-2 px-3">
+                      <div className="font-medium text-foreground truncate">{d.cliente}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        {d.id} · {d.ordenId}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="font-medium text-foreground truncate">{d.ruta}</div>
+                      <div className="text-[10px] text-muted-foreground">{d.transportista}</div>
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums font-semibold relative">
+                      <div
+                        className="absolute inset-y-1 right-1 bg-amber-500/10 dark:bg-amber-400/15 rounded-sm pointer-events-none transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (d.horasLeadTime / maxLeadTime) * 100))}%` }}
+                      />
+                      <span className="relative z-10">{d.horasLeadTime}h</span>
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      {d.otif ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          <CheckCircle2 className="w-3 h-3" />
+                          OTIF
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                          title={d.incidencia || 'Entrega fuera de SLA'}
+                        >
+                          <AlertCircle className="w-3 h-3" />
+                          Falla
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums text-foreground font-medium">
+                      {formatCLP(d.costo)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+
+          {displayRecords.length === 0 && (
+            <div className="py-8 text-center text-muted-foreground">
+              No se encontraron despachos para los filtros seleccionados.
+            </div>
+          )}
         </div>
 
         <div className="pt-3 text-[11px] text-muted-foreground flex items-center justify-between">
           <span>
-            Mostrando{' '}
             <strong className="text-foreground tabular-nums">
-              {Math.min(displayRecords.length, 100)}
+              {formatNumber(displayRecords.length)}
             </strong>{' '}
-            de <span className="tabular-nums">{displayRecords.length}</span> despachos
+            despachos en la lista · scrolls para recorrerlos todos
           </span>
           <span className="italic">Datos operativos reproducibles (Seed Mulberry32)</span>
         </div>

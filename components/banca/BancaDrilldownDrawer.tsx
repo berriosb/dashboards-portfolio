@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useLayoutEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Sheet,
   SheetContent,
@@ -69,6 +70,35 @@ export function BancaDrilldownDrawer({
     () => Math.max(...displayRecords.map((r) => r.saldo), 1),
     [displayRecords]
   );
+
+  // La cartera tiene 6.131 créditos y el drawer antes pintaba solo los
+  // primeros 100: 6.031 quedan inalcanzables, ni con scroll ni con búsqueda
+  // si el deudor está fuera del corte. Virtualizar deja recorrerlos todos
+  // renderizando únicamente las filas visibles, así que el costo del DOM
+  // sigue siendo de ~20 filas en vez de 6.131.
+  // El elemento de scroll va en estado, no en un ref.
+  //
+  // useVirtualizer solo engancha el elemento en un layout effect SIN
+  // dependencias, o sea en cada render. Radix monta el Sheet en un commit
+  // posterior al que abre el drawer, así que con un `useRef` normal no existe
+  // ningún render después de que el div exista y el virtualizador se queda
+  // sin elemento: la tabla queda vacía aunque el alto total esté reservado.
+  // El callback-ref-como-estado fuerza ese render al adjuntarse el div.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+  const FILAS_POR_COLUMNA = '2.2fr 1fr 1.2fr 0.7fr 1.1fr';
+
+  const virtualizador = useVirtualizer({
+    count: displayRecords.length,
+    getScrollElement: () => scrollEl,
+    estimateSize: () => 41,
+    overscan: 12,
+  });
+
+  // Y hay que re-medir cuando el elemento aparece: el primer rect puede caer
+  // sobre un Sheet todavía oculto, con 0 px de alto.
+  useLayoutEffect(() => {
+    if (scrollEl) virtualizador.measure();
+  }, [scrollEl, virtualizador]);
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -163,11 +193,18 @@ export function BancaDrilldownDrawer({
           </div>
         </div>
 
-        {/* Tabla de Resultados */}
-        <div className="flex-1 overflow-y-auto border border-border rounded-xl mt-3">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-muted/50 sticky top-0 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
-              <tr>
+        {/* Tabla de Resultados. Virtualizada: el contenedor de scroll es el
+            padre, el <tbody> reserva el alto total y cada fila visible se
+            posiciona en su offset. `aria-rowcount`/`aria-rowindex` mantienen
+            el conteo real para lectores de pantalla, que si no anuncian solo
+            las filas montadas. */}
+        <div ref={setScrollEl} className="flex-1 overflow-y-auto border border-border rounded-xl mt-3">
+          <table className="w-full text-left text-xs border-collapse" aria-rowcount={displayRecords.length}>
+            <thead
+              className="bg-muted/50 sticky top-0 z-10 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider"
+              style={{ display: 'grid' }}
+            >
+              <tr style={{ display: 'grid', gridTemplateColumns: FILAS_POR_COLUMNA }}>
                 <th className="py-2.5 px-3 font-semibold">Crédito / RUT</th>
                 <th className="py-2.5 px-3 font-semibold">Producto / Seg.</th>
                 <th className="py-2.5 px-3 font-semibold text-right">Saldo CLP</th>
@@ -175,66 +212,89 @@ export function BancaDrilldownDrawer({
                 <th className="py-2.5 px-3 font-semibold text-right">Provisión</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
-              {displayRecords.slice(0, 100).map((cr) => (
-                <tr key={cr.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="py-2 px-3">
-                    <div className="font-medium text-foreground">{cr.nombre}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono">
-                      {cr.rut} · {cr.id}
-                    </div>
-                  </td>
-                  <td className="py-2 px-3">
-                    <div className="font-medium text-foreground">{cr.producto}</div>
-                    <div className="text-[10px] text-muted-foreground">{cr.segmento}</div>
-                  </td>
-                  <td className="py-2 px-3 text-right tabular-nums font-semibold text-foreground relative">
-                    <div
-                      className="absolute inset-y-1 right-1 bg-emerald-500/10 dark:bg-emerald-400/15 rounded-sm pointer-events-none transition-all duration-300"
-                      style={{ width: `${Math.min(100, Math.max(0, (cr.saldo / maxSaldo) * 100))}%` }}
-                    />
-                    <span className="relative z-10">{formatCLP(cr.saldo)}</span>
-                  </td>
-                  <td className="py-2 px-3 text-right tabular-nums">
-                    <span
-                      className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                        cr.diasMora >= 90
-                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
-                          : cr.diasMora >= 30
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
-                          : cr.diasMora > 0
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200'
-                          : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      }`}
-                    >
-                      {cr.diasMora === 0 ? 'Al día' : `${cr.diasMora}d`}
-                    </span>
-                  </td>
-                  <td className="py-2 px-3 text-right tabular-nums text-muted-foreground font-mono text-[11px]">
-                    {formatCLP(cr.provision)}
-                  </td>
-                </tr>
-              ))}
-              {displayRecords.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No se encontraron operaciones crediticias para los filtros seleccionados.
-                  </td>
-                </tr>
-              )}
+            <tbody
+              className="divide-y divide-border/60"
+              style={{
+                display: 'grid',
+                height: `${virtualizador.getTotalSize()}px`,
+                position: 'relative',
+                width: '100%',
+              }}
+            >
+              {virtualizador.getVirtualItems().map((filaVirtual) => {
+                const cr = displayRecords[filaVirtual.index];
+                return (
+                  <tr
+                    key={cr.id}
+                    aria-rowindex={filaVirtual.index + 2}
+                    className="hover:bg-muted/30 transition-colors"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: FILAS_POR_COLUMNA,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${filaVirtual.size}px`,
+                      transform: `translateY(${filaVirtual.start}px)`,
+                    }}
+                  >
+                    <td className="py-2 px-3">
+                      <div className="font-medium text-foreground truncate">{cr.nombre}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        {cr.rut} · {cr.id}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="font-medium text-foreground truncate">{cr.producto}</div>
+                      <div className="text-[10px] text-muted-foreground">{cr.segmento}</div>
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums font-semibold text-foreground relative">
+                      <div
+                        className="absolute inset-y-1 right-1 bg-emerald-500/10 dark:bg-emerald-400/15 rounded-sm pointer-events-none transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (cr.saldo / maxSaldo) * 100))}%` }}
+                      />
+                      <span className="relative z-10">{formatCLP(cr.saldo)}</span>
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums">
+                      <span
+                        className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          cr.diasMora >= 90
+                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
+                            : cr.diasMora >= 30
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
+                            : cr.diasMora > 0
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200'
+                            : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                        }`}
+                      >
+                        {cr.diasMora === 0 ? 'Al día' : `${cr.diasMora}d`}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums text-muted-foreground font-mono text-[11px]">
+                      {formatCLP(cr.provision)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+
+          {displayRecords.length === 0 && (
+            <div className="py-8 text-center text-muted-foreground">
+              No se encontraron operaciones crediticias para los filtros seleccionados.
+            </div>
+          )}
         </div>
 
-        <div className="pt-3 text-[11px] text-muted-foreground flex items-center justify-between">
+        <div className="pt-3 text-[11px] text-muted-foreground flex items-center justify-between gap-3">
           <span>
-            Mostrando{' '}
             <strong className="text-foreground tabular-nums">
-              {Math.min(displayRecords.length, 100)}
+              {formatNumber(displayRecords.length)}
             </strong>{' '}
-            de <span className="tabular-nums">{displayRecords.length}</span> operaciones
+            operaciones en la lista · scrolls para recorrerlas todas
           </span>
-          <span className="italic">Normativa CMF / IFRS 9 (Simulación determinista)</span>
+          <span className="italic text-right">Normativa CMF / IFRS 9 (Simulación determinista)</span>
         </div>
       </SheetContent>
     </Sheet>
