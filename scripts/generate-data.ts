@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { BANCA_METRICS } from '../lib/metric-definitions';
 
 // PRNG determinista: Mulberry32
 function createMulberry32(seed: number) {
@@ -25,6 +26,110 @@ function createRng(seed: number) {
 const dataDir = path.resolve(__dirname, '../data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
+}
+
+function tramoFor(diasMora: number): string {
+  if (diasMora <= 0) return 'Al Día (0d)';
+  if (diasMora <= 29) return 'Mora 1-29d';
+  if (diasMora <= 59) return 'Mora 30-59d';
+  if (diasMora <= 89) return 'Mora 60-89d';
+  return 'Mora 90+d';
+}
+
+// Provisiones según estándar CMF / IFRS 9
+function provisionFor(saldo: number, diasMora: number): number {
+  if (diasMora >= 30 && diasMora < 60) return Math.round(saldo * 0.18);
+  if (diasMora >= 60 && diasMora < 90) return Math.round(saldo * 0.45);
+  if (diasMora >= 90) return Math.round(saldo * 0.85);
+  return Math.round(saldo * 0.012);
+}
+
+// ==========================================
+// DINÁMICA DE MORA: cadena de Markov de 5 estados
+// ==========================================
+// La cartera es un STOCK medido en un instante, no un flujo de eventos. Cada
+// crédito recorre 5 tramos cada mes y la morosidad agregada es el resultado
+// del agregado, no de un número escrito a mano.
+//
+// La matriz base se calibró con lógicas de cobranza reales: la mora leve se
+// regulariza más rápido que la profunda, el agravamiento se frena al llegar a
+// 90+ (ya no hay activo que empeorar) y la mora profunda se recupera con
+// lentitud por el costo del provisionamiento. Sin esto, la serie salía con
+// saltos de ±1pp mensuales que ninguna operación del negocio explica.
+const MORA_STATES = 5; // al día | 1-29 | 30-59 | 60-89 | 90+
+
+// Dinámica de salida y avance entre tramos morosos. Cada fila reparte
+// probabilidad 1.0 entre el propio tramo y los adyacentes. Es estable para
+// toda la industria: lo que cambia con el ciclo es CUÁNTO entra a mora, no
+// cómo sale. Por eso sólo la fila "al día" se calibra (ver pEntrada).
+// Índices: 0=al día, 1=1-29d, 2=30-59d, 3=60-89d, 4=90+d
+const MORA_TRANSICIONES: number[][] = [
+  /* 1-29d  */ [0.55000, 0.20000, 0.25000, 0, 0],
+  /* 30-59d */ [0.22000, 0, 0.50000, 0.28000, 0],
+  /* 60-89d */ [0.10000, 0, 0, 0.60000, 0.30000],
+  /* 90+d   */ [0.08000, 0, 0, 0, 0.92000],
+];
+
+// Probabilidad mensual de que una cartera sana entre en mora (1-29d).
+// Es el ÚNICO dial del modelo: `scripts/calibrate-banca.ts` lo barre contra
+// las bandas reales de la CMF.
+const MORA_ENTRADA_BASE = 0.0025;
+let MORA_ESCALA_GLOBAL = 1.0;
+
+// Meses de quemado antes de medir. Sin quemado la cartera parte "todo al día"
+// y tarda años en llegar a su distribución estacionaria: los primeros meses
+// del período salían artificialmente limpios y luego la mora se disparaba.
+const MORA_BURNIN_MESES = 180;
+
+// Heterogeneidad de la cartera: cada crédito tiene su propio flujo de entrada
+// a mora. UnTarjeta de consumo no se comporta como una hipotecaria.
+const RIESGO_MIN = 0.45;
+const RIESGO_MAX = 2.3;
+
+function construirTransiciones(pEntrada: number): number[][] {
+  const p = Math.min(0.25, Math.max(0, pEntrada));
+  return [[1 - p, p, 0, 0, 0], ...MORA_TRANSICIONES];
+}
+
+function pEntradaPara(perfilRiesgo: number): number {
+  const mult = RIESGO_MIN + perfilRiesgo * (RIESGO_MAX - RIESGO_MIN);
+  return MORA_ENTRADA_BASE * mult * MORA_ESCALA_GLOBAL;
+}
+
+function avanzarTramo(estado: number, transiciones: number[][], rand: () => number): number {
+  const fila = transiciones[estado];
+  const u = rand();
+  let acc = 0;
+  for (let s = 0; s < MORA_STATES; s++) {
+    acc += fila[s];
+    if (u < acc) return s;
+  }
+  return estado;
+}
+
+function diasMoraParaTramo(
+  estado: number,
+  randInt: (min: number, max: number) => number,
+): number {
+  switch (estado) {
+    case 1:
+      return randInt(1, 29);
+    case 2:
+      return randInt(30, 59);
+    case 3:
+      return randInt(60, 89);
+    case 4:
+      return randInt(90, 240);
+    default:
+      return 0;
+  }
+}
+
+function regionDeSucursal(sucursal: string): string {
+  if (sucursal.includes('Viña')) return 'Valparaíso';
+  if (sucursal.includes('Concepción')) return 'Biobío';
+  if (sucursal.includes('Antofagasta')) return 'Antofagasta';
+  return 'RM';
 }
 
 // ==========================================
@@ -271,14 +376,53 @@ function generateRetail() {
     },
   };
 
-  fs.writeFileSync(path.join(dataDir, 'retail.json'), JSON.stringify(outputData, null, 2), 'utf-8');
+  fs.writeFileSync(path.join(dataDir, 'retail.json'), JSON.stringify(outputData), 'utf-8');
   console.log(`✓ data/retail.json generado con éxito (${RECORDS.length} transacciones, ${SKUS.length} SKUs, ${CUSTOMERS.length} clientes).`);
 }
 
 // ==========================================
 // 2. GENERADOR DE BANCA (Seed 20260930)
 // ==========================================
-function generateBanca() {
+export interface BancaOpts {
+  /** Escala global de la dinámica de mora. Único dial del modelo. */
+  escalaMora?: number;
+  /**
+   * Número de colocaciones vigentes al inicio del período.
+   *
+   * No es un detalle cosmético: los KPIs de morosidad son ratios sobre la cola
+   * de la cartera. Con ~1.300 créditos y una mora 90+ de 1,5%, la cola son
+   * 4 créditos: el ratio lo decide el Bigger de ellos y cualquier cambio
+   * mensual es ruido discreto, no un negocio. Crecer la cartera es lo que hace
+   * que el indicador sea un promedio y no una moneda al aire.
+   */
+  creditosBase?: number;
+  /** Si es false, no escribe data/banca.json (para barridos en memoria). */
+  escribir?: boolean;
+}
+
+/**
+ * Tamaño de cartera por defecto.
+ *
+ * Elegido midiendo, no por gusto: el ruido mensual de la mora 30+ cae como
+ * 1/√N. Con 1.200 créditos la cola 90+ eran 4 créditos y el indicador lo
+ * decidía el mayor de ellos (σ 0,41pp). Con 6.000 son ~120 y el ratio pasa a
+ * ser un promedio real (σ 0,17pp) por 4,9MB de historial.
+ *
+ * Ver `pnpm data:calibrate` para la tabla completa tamaño/ruido/tamaño de
+ * archivo antes de tocar este número.
+ */
+export const CREDITOS_BASE = 6000;
+
+/**
+ * Dial vigente de la dinámica de mora. Exportado para que el arnés de
+ * calibración valide exactamente lo que el generador usa, en vez de repetir
+ * el número y que se desincronice en silencio.
+ */
+export const ESCALA_MORA_VIGENTE = 2.8;
+
+export function generateBanca(opts: BancaOpts = {}) {
+  const { escalaMora = ESCALA_MORA_VIGENTE, creditosBase = CREDITOS_BASE, escribir = true } = opts;
+  MORA_ESCALA_GLOBAL = escalaMora;
   const { choice, randInt, rand } = createRng(20260930);
 
   const PRODUCTOS = ['Consumo', 'Hipotecario', 'Comercial', 'Tarjeta'];
@@ -315,11 +459,28 @@ function generateBanca() {
   const NOMBRES = ['Rodrigo', 'Carolina', 'Andrés', 'Loreto', 'Ignacio', 'Daniela', 'Cristóbal', 'Macarena', 'Gonzalo', 'Andrea'];
   const APELLIDOS = ['Vargas', 'Castillo', 'Fuentes', 'Valenzuela', 'Lagos', 'Poblete', 'Araya', 'Morales', 'Espinoza', 'Bravo'];
 
-  const RECORDS: CreditoRecord[] = [];
+  // Serie mensual de la cartera: la banca es un STOCK medido en un instante,
+  // no un flujo de eventos. Para que el filtro temporal sea real, cada crédito
+  // necesita su estado mes a mes (saldo, mora y provisión).
+  const MESES = [
+    '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03',
+    '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09',
+  ];
 
-  for (let i = 1; i <= 1200; i++) {
+  const RECORDS: CreditoRecord[] = [];
+  const HISTORIAL: Record<
+    string,
+    Array<{ mes: string; saldo: number; diasMora: number; provision: number }>
+  > = {};
+
+  // Cartera de clientes: ~5 colocaciones por cliente, ratio sano para banca de
+  // consumo. Antes la pool era fija en 400 y con una cartera de 6.000 créditos
+  // eso serían 15 créditos por cliente.
+  const CLIENTES_BANCA = Math.max(400, Math.round(creditosBase * 0.2));
+
+  for (let i = 1; i <= creditosBase; i++) {
     const id = `CR-2026-${String(i).padStart(5, '0')}`;
-    const clienteNum = randInt(1, 400);
+    const clienteNum = randInt(1, CLIENTES_BANCA);
     const clienteId = `CL-${String(clienteNum).padStart(5, '0')}`;
     const rutNum = randInt(8000000, 24000000);
     const rutDv = randInt(0, 9);
@@ -329,7 +490,7 @@ function generateBanca() {
     const producto = choice(PRODUCTOS);
     const segmento = choice(SEGMENTOS);
     const sucursal = choice(SUCURSALES);
-    const region = sucursal.includes('Viña') ? 'Valparaíso' : sucursal.includes('Concepción') ? 'Biobío' : sucursal.includes('Antofagasta') ? 'Antofagasta' : 'RM';
+    const region = regionDeSucursal(sucursal);
 
     let montoOriginal = 6000000;
     let plazoMeses = 36;
@@ -358,37 +519,50 @@ function generateBanca() {
     const factorSaldo = Math.max(0.15, (plazoMeses - mesesTranscurridos) / plazoMeses);
     const saldo = Math.round(montoOriginal * factorSaldo);
 
-    // Distribución realista de mora en banca chilena
-    const rMora = rand();
-    let diasMora = 0;
-    let tramoMora = 'Al Día (0d)';
+    // Trayectoria mensual de mora. La cartera evoluciona dentro del período:
+    // un crédito sano puede entrar en mora y un moroso puede regularizarse.
+    // Esto hace que el filtro temporal sea una ventana real sobre un stock.
+    //
+    // El perfil de riesgo fija el behavior de la cadena: cada crédito tiene su
+    // propia matriz (más o menos agresiva) y se quema hasta su distribución
+    // estacionaria antes de entrar al período medido.
+    const perfilRiesgo = rand();
+    const transiciones = construirTransiciones(pEntradaPara(perfilRiesgo));
 
-    if (rMora < 0.82) {
-      diasMora = 0;
-      tramoMora = 'Al Día (0d)';
-    } else if (rMora < 0.92) {
-      diasMora = randInt(1, 29);
-      tramoMora = 'Mora 1-29d';
-    } else if (rMora < 0.96) {
-      diasMora = randInt(30, 59);
-      tramoMora = 'Mora 30-59d';
-    } else if (rMora < 0.98) {
-      diasMora = randInt(60, 89);
-      tramoMora = 'Mora 60-89d';
-    } else {
-      diasMora = randInt(90, 240);
-      tramoMora = 'Mora 90+d';
+    let estado = 0;
+    for (let b = 0; b < MORA_BURNIN_MESES; b++) {
+      estado = avanzarTramo(estado, transiciones, rand);
+    }
+    let diasMoraMes = diasMoraParaTramo(estado, randInt);
+
+    // El saldo amortiza mes a mes (pago de cuotas), con caída más lenta en mora.
+    const cuotaMensual = Math.round(montoOriginal / plazoMeses);
+    let saldoMes = saldo;
+    const serie: Array<{ mes: string; saldo: number; diasMora: number; provision: number }> = [];
+
+    for (let m = 0; m < MESES.length; m++) {
+      // Amortización
+      if (diasMoraMes === 0) {
+        saldoMes = Math.max(Math.round(montoOriginal * 0.06), saldoMes - cuotaMensual);
+      } else {
+        saldoMes = Math.max(Math.round(montoOriginal * 0.06), saldoMes - Math.round(cuotaMensual * 0.25));
+      }
+
+      // Transición de estado de mora
+      estado = avanzarTramo(estado, transiciones, rand);
+      diasMoraMes = diasMoraParaTramo(estado, randInt);
+
+      const provMes = provisionFor(saldoMes, diasMoraMes);
+      serie.push({ mes: MESES[m], saldo: saldoMes, diasMora: diasMoraMes, provision: provMes });
     }
 
-    // Provisiones según estándar CMF / IFRS 9
-    let provision = Math.round(saldo * 0.012); // Provisión genérica base ~1.2%
-    if (diasMora >= 30 && diasMora < 60) {
-      provision = Math.round(saldo * 0.18);
-    } else if (diasMora >= 60 && diasMora < 90) {
-      provision = Math.round(saldo * 0.45);
-    } else if (diasMora >= 90) {
-      provision = Math.round(saldo * 0.85); // Cartera deteriorada severa
-    }
+    const ultimo = serie[serie.length - 1];
+    const diasMora = ultimo.diasMora;
+    const tramoMora = tramoFor(diasMora);
+    const provision = ultimo.provision;
+    const saldoFinal = ultimo.saldo;
+
+    HISTORIAL[id] = serie;
 
     const fechaOtorgamiento = `2024-${String(randInt(1, 12)).padStart(2, '0')}-${String(randInt(1, 28)).padStart(2, '0')}`;
     const fechaVencimiento = `2027-${String(randInt(1, 12)).padStart(2, '0')}-${String(randInt(1, 28)).padStart(2, '0')}`;
@@ -405,7 +579,7 @@ function generateBanca() {
       fechaOtorgamiento,
       fechaVencimiento,
       montoOriginal,
-      saldo,
+      saldo: saldoFinal,
       tasaInteresAnual: tasaInteres,
       diasMora,
       tramoMora,
@@ -413,12 +587,87 @@ function generateBanca() {
     });
   }
 
-  // Movimientos de captación neta mensuales (12 meses)
-  const MESES = [
-    '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03',
-    '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09',
-  ];
+  // Originaciones nuevas durante el período: hacen crecer la cartera mes a mes
+  // y evitan que el saldo solo caiga por amortización.
+  let nuevoId = creditosBase;
+  const ENMES = ['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03',
+    '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'];
+  for (let m = 0; m < ENMES.length; m++) {
+    const mes = ENMES[m];
+    const placements = randInt(6, 14);
+    for (let k = 0; k < placements; k++) {
+      nuevoId++;
+      const clienteNum = randInt(1, CLIENTES_BANCA);
+      const id = `CR-2026-${String(nuevoId).padStart(5, '0')}`;
+      const producto = choice(PRODUCTOS);
+      const segmento = choice(SEGMENTOS);
+      const sucursal = choice(SUCURSALES);
+      const region = regionDeSucursal(sucursal);
+      const montoOriginal =
+        producto === 'Hipotecario' ? randInt(65000000, 190000000)
+        : producto === 'Comercial' ? randInt(12000000, 85000000)
+        : producto === 'Consumo' ? randInt(2500000, 16000000)
+        : randInt(1000000, 6500000);
+      const plazoMeses =
+        producto === 'Hipotecario' ? randInt(240, 360)
+        : producto === 'Comercial' ? randInt(12, 60)
+        : producto === 'Consumo' ? randInt(12, 48)
+        : 12;
 
+      // El crédito existe sólo a partir de su mes de otorgamiento
+      const cuotaMensual = Math.round(montoOriginal / plazoMeses);
+      const transiciones = construirTransiciones(pEntradaPara(rand()));
+      // Una colocación nueva no parte "limpia" por convenience: parte del
+      // estado estacionario de su perfil. Si arrancara siempre al día, el
+      // primer mes del período se vería artificialmente sano.
+      let estado = 0;
+      for (let b = 0; b < MORA_BURNIN_MESES; b++) {
+        estado = avanzarTramo(estado, transiciones, rand);
+      }
+      let diasMoraMes = diasMoraParaTramo(estado, randInt);
+      let saldoMes = montoOriginal;
+      const serie: Array<{ mes: string; saldo: number; diasMora: number; provision: number }> = [];
+      for (let m2 = m; m2 < MESES.length; m2++) {
+        if (diasMoraMes === 0) {
+          saldoMes = Math.max(Math.round(montoOriginal * 0.06), saldoMes - cuotaMensual);
+        } else {
+          saldoMes = Math.max(Math.round(montoOriginal * 0.06), saldoMes - Math.round(cuotaMensual * 0.25));
+        }
+        estado = avanzarTramo(estado, transiciones, rand);
+        diasMoraMes = diasMoraParaTramo(estado, randInt);
+        serie.push({
+          mes: MESES[m2],
+          saldo: saldoMes,
+          diasMora: diasMoraMes,
+          provision: provisionFor(saldoMes, diasMoraMes),
+        });
+      }
+
+      const ultimo = serie[serie.length - 1];
+      HISTORIAL[id] = serie;
+      const fechaOtorgamiento = `${mes}-${String(randInt(1, 28)).padStart(2, '0')}`;
+      RECORDS.push({
+        id,
+        clienteId: `CL-${String(clienteNum).padStart(5, '0')}`,
+        rut: `${randInt(1, 24)}.${String(randInt(100, 999))}.${String(randInt(100, 999))}-${randInt(0, 9)}`,
+        nombre: `${choice(NOMBRES)} ${choice(APELLIDOS)}`,
+        producto,
+        segmento,
+        sucursal,
+        region,
+        fechaOtorgamiento,
+        fechaVencimiento: `2027-${String(randInt(1, 12)).padStart(2, '0')}-${String(randInt(1, 28)).padStart(2, '0')}`,
+        montoOriginal,
+        saldo: ultimo.saldo,
+        tasaInteresAnual: 16.5,
+        diasMora: ultimo.diasMora,
+        tramoMora: tramoFor(ultimo.diasMora),
+        provision: ultimo.provision,
+      });
+    }
+  }
+
+  // Movimientos de captación neta mensuales (12 meses)
   interface Movimiento {
     id: string;
     mes: string;
@@ -440,13 +689,63 @@ function generateBanca() {
     }
   }
 
-  // Precomputed: Estado de Resultados y ROE mensual
+  // Precomputed: Estado de Resultados y ROE mensual.
+  //
+  // ANTES: `utilidadNeta`, `patrimonio` y `activos` se sorteaban de forma
+  // INDEPENDIENTE de la cartera, y el resultado era un banco imposible: la
+  // cartera del mismo snapshot sumaba 203.302.165.957 mientras el balance
+  // declaraba 28.660.000.000 de activos, o sea la cartera era 7,09x el balance
+  // total. La utilidad anual de 0,59 B sobre 203,3 B de cartera daba un retorno
+  // de 0,29%, contra un margen de intermediación chileno de 3,5-5,0%.
+  //
+  // AHORA el estado de resultados se DERIVA de la cartera real que produce el
+  // mismo historial, con un puente explícito y documentado:
+  //   ingreso financiero bruto  = cartera x rendimiento anual
+  //   menos costo de crédito   = provisiones del mes / 12
+  //   menos gastos operativos   = cartera x gasto operativo anual
+  //   = utilidad neta
+  // y el patrimonio sale de un ROE objetivo, no de una rampa inventada.
+  //
+  // OJO con las provisiones: el campo `provision` de cada punto del historial
+  // es el STOCK de provisiones constituidas contra esa exposición (2,83% de la
+  // cartera a fin de mes), no un gasto del mes. Restarlo mes a mes como si fuera
+  // flujo daba una utilidad negativa de -5.065M al mes. El costo de crédito
+  // mensual es ese stock amortizado a 12 meses, que es el ECL recurrente anual
+  // de la cartera.
+  const RENDIMIENTO_CARTERA_ANUAL = 0.056; // 5,6% bruto sobre cartera
+  const GASTO_OPERATIVO_ANUAL = 0.01; // 1,0% de la cartera
+  const ROE_OBJETIVO = 0.145; // 14,5% = promedio del sistema bancario chileno
+  const CARTERA_SOBRE_ACTIVOS = 0.62; // el resto es liquidez e inmovilizado
+  const MESES_POR_ANIO = 12;
+
+  const carteraYProvisionesPorMes = new Map<string, { cartera: number; provisiones: number }>();
+  for (const serie of Object.values(HISTORIAL)) {
+    for (const punto of serie) {
+      const acc = carteraYProvisionesPorMes.get(punto.mes) ?? { cartera: 0, provisiones: 0 };
+      acc.cartera += punto.saldo;
+      acc.provisiones += punto.provision;
+      carteraYProvisionesPorMes.set(punto.mes, acc);
+    }
+  }
+
   const RESULTADOS_MENSUALES = MESES.map((mes, idx) => {
-    const utilidadNeta = randInt(42000000, 58000000);
-    const patrimonio = 3800000000 + idx * 25000000;
-    const activos = 28000000000 + idx * 120000000;
-    const roe = parseFloat(((utilidadNeta * 12 / patrimonio) * 100).toFixed(1));
-    const roa = parseFloat(((utilidadNeta * 12 / activos) * 100).toFixed(2));
+    const { cartera, provisiones } = carteraYProvisionesPorMes.get(mes) ?? { cartera: 0, provisiones: 0 };
+    const ingresoFinanciero = Math.round((cartera * RENDIMIENTO_CARTERA_ANUAL) / MESES_POR_ANIO);
+    const costoCredito = Math.round(provisiones / MESES_POR_ANIO);
+    const gastoOperativo = Math.round((cartera * GASTO_OPERATIVO_ANUAL) / MESES_POR_ANIO);
+    const utilidadNeta = ingresoFinanciero - costoCredito - gastoOperativo;
+    const utilidadAnualizada = utilidadNeta * MESES_POR_ANIO;
+    // El patrimonio se ancla al ROE objetivo con una oscilación suave y
+    // determinista: sin ella el ROE salía clavado en 14,5% los 12 meses, que se
+    // lee como una tautología y deja la comparación entre ventanas sin delta.
+    // Es una calibración explícita, no una medición: la fórmula está arriba.
+    const oscilacionPatrimonio = 1 + 0.06 * Math.sin((2 * Math.PI * idx) / MESES.length);
+    const patrimonio = Math.max(1, Math.round((utilidadAnualizada / ROE_OBJETIVO) * oscilacionPatrimonio));
+    const activos = Math.round(cartera / CARTERA_SOBRE_ACTIVOS);
+    // El patrimonio se derivó de la utilidad ANUALIZADA, así que el ROE tiene
+    // que anualizar también: sin el factor 12 salía 1,2% en vez de 14,5%.
+    const roe = parseFloat(((utilidadAnualizada / patrimonio) * 100).toFixed(1));
+    const roa = parseFloat(((utilidadAnualizada / activos) * 100).toFixed(2));
     return { mes, utilidadNeta, patrimonio, activos, roe, roa };
   });
 
@@ -466,58 +765,90 @@ function generateBanca() {
           'Ajustar políticas de renovación automática de cupos y ejecutar cobranza preventiva con reestructuración de cuotas a tasa preferencial.',
       },
     },
-    initialKpis: [
-      {
-        key: 'carteraTotal',
-        label: 'Cartera Total Colocaciones',
-        value: RECORDS.reduce((s, r) => s + r.saldo, 0),
-        previousValue: Math.round(RECORDS.reduce((s, r) => s + r.saldo, 0) * 0.94),
-        unit: 'CLP',
-        metricType: 'derived',
-        benchmark: 1500000000,
-        benchmarkSource: 'Presupuesto de colocaciones CMF',
-      },
-      {
-        key: 'moraCarteraPct',
-        label: 'Mora CMF (30+ días)',
-        value: 2.4,
-        previousValue: 2.1,
-        unit: '%',
-        metricType: 'derived',
-        benchmark: 2.5,
-        benchmarkSource: 'Umbral prudencial CMF morosidad temprana',
-      },
-      {
-        key: 'moraVencida90Pct',
-        label: 'Mora Vencida (90+ días)',
-        value: 1.1,
-        previousValue: 0.95,
-        unit: '%',
-        metricType: 'derived',
-        benchmark: 1.0,
-        benchmarkSource: 'Gatillo provisión obligatoria CMF',
-      },
-      {
-        key: 'coberturaProvisiones',
-        label: 'Cobertura de Provisiones',
-        value: 138.4,
-        previousValue: 142.1,
-        unit: '%',
-        metricType: 'derived',
-        benchmark: 130.0,
-        benchmarkSource: 'Regulación CMF (estándar IFRS 9)',
-      },
-      {
-        key: 'roe',
-        label: 'ROE Anualizado',
-        value: 15.2,
-        previousValue: 14.8,
-        unit: '%',
-        metricType: 'precomputed',
-        benchmark: 14.5,
-        benchmarkSource: 'Promedio histórico banca chilena (CMF)',
-      },
-    ],
+    initialKpis: (() => {
+      // Se derivan del historial real: primer mes vs último mes del período.
+      // Evita los valores hardcodeados que rompían la reconciliación con el motor.
+      const primerMes = MESES[0];
+      const ultimoMes = MESES[MESES.length - 1];
+      const snapshot = (mes: string) => {
+        let saldo = 0;
+        let mora30 = 0;
+        let mora90 = 0;
+        let prov = 0;
+        for (const serie of Object.values(HISTORIAL)) {
+          const punto = serie.find((s) => s.mes === mes);
+          if (!punto) continue;
+          saldo += punto.saldo;
+          if (punto.diasMora >= 30) mora30 += punto.saldo;
+          if (punto.diasMora >= 90) mora90 += punto.saldo;
+          prov += punto.provision;
+        }
+        return {
+          carteraTotal: saldo,
+          moraCarteraPct: saldo > 0 ? parseFloat(((mora30 / saldo) * 100).toFixed(1)) : 0,
+          moraVencida90Pct: saldo > 0 ? parseFloat(((mora90 / saldo) * 100).toFixed(1)) : 0,
+          coberturaProvisiones:
+            mora90 > 0 ? parseFloat(((prov / mora90) * 100).toFixed(1)) : 100,
+        };
+      };
+      const inicio = snapshot(primerMes);
+      const fin = snapshot(ultimoMes);
+      return [
+        {
+          key: 'carteraTotal',
+          label: 'Cartera Total Colocaciones',
+          value: fin.carteraTotal,
+          previousValue: inicio.carteraTotal,
+          unit: 'CLP',
+          metricType: 'derived',
+          benchmark: BANCA_METRICS.carteraTotal.benchmark,
+          benchmarkSource: BANCA_METRICS.carteraTotal.benchmarkSource,
+        },
+        {
+          key: 'moraCarteraPct',
+          label: 'Mora CMF (30+ días)',
+          value: fin.moraCarteraPct,
+          previousValue: inicio.moraCarteraPct,
+          unit: '%',
+          metricType: 'derived',
+          benchmark: BANCA_METRICS.moraCarteraPct.benchmark,
+          benchmarkSource: BANCA_METRICS.moraCarteraPct.benchmarkSource,
+        },
+        {
+          key: 'moraVencida90Pct',
+          label: 'Mora Vencida (90+ días)',
+          value: fin.moraVencida90Pct,
+          previousValue: inicio.moraVencida90Pct,
+          unit: '%',
+          metricType: 'derived',
+          benchmark: BANCA_METRICS.moraVencida90Pct.benchmark,
+          benchmarkSource: BANCA_METRICS.moraVencida90Pct.benchmarkSource,
+        },
+        {
+          key: 'coberturaProvisiones',
+          label: 'Cobertura de Provisiones',
+          value: fin.coberturaProvisiones,
+          previousValue: inicio.coberturaProvisiones,
+          unit: '%',
+          metricType: 'derived',
+          benchmark: BANCA_METRICS.coberturaProvisiones.benchmark,
+          benchmarkSource: BANCA_METRICS.coberturaProvisiones.benchmarkSource,
+        },
+        {
+          key: 'roe',
+          label: 'ROE Anualizado',
+          // Se deriva del estado de resultados real en vez de ir hardcodeado:
+          // antes el primer pintado mostraba 15,2% mientras el motor, sobre el
+          // mismo mes, podía devolver otro número.
+          value: RESULTADOS_MENSUALES[RESULTADOS_MENSUALES.length - 1].roe,
+          previousValue: RESULTADOS_MENSUALES[0].roe,
+          unit: '%',
+          metricType: 'precomputed',
+          benchmark: BANCA_METRICS.roe.benchmark,
+          benchmarkSource: BANCA_METRICS.roe.benchmarkSource,
+        },
+      ];
+    })(),
     lookups: {
       productos: PRODUCTOS,
       segmentos: SEGMENTOS,
@@ -527,13 +858,18 @@ function generateBanca() {
     },
     records: RECORDS,
     recordsMovimientos: MOVIMIENTOS,
+    // Serie mensual por crédito: convierte la cartera en un stock medible en el tiempo
+    historialCartera: HISTORIAL,
     precomputed: {
       resultadoMensual: RESULTADOS_MENSUALES,
     },
   };
 
-  fs.writeFileSync(path.join(dataDir, 'banca.json'), JSON.stringify(outputData, null, 2), 'utf-8');
-  console.log(`✓ data/banca.json generado con éxito (${RECORDS.length} colocaciones, ${MOVIMIENTOS.length} movimientos).`);
+  if (escribir) {
+    fs.writeFileSync(path.join(dataDir, 'banca.json'), JSON.stringify(outputData), 'utf-8');
+    console.log(`✓ data/banca.json generado con éxito (${RECORDS.length} colocaciones, ${MOVIMIENTOS.length} movimientos).`);
+  }
+  return outputData;
 }
 
 // ==========================================
@@ -790,11 +1126,13 @@ function generateLogistica() {
     records: RECORDS,
   };
 
-  fs.writeFileSync(path.join(dataDir, 'logistica.json'), JSON.stringify(outputData, null, 2), 'utf-8');
+  fs.writeFileSync(path.join(dataDir, 'logistica.json'), JSON.stringify(outputData), 'utf-8');
   console.log(`✓ data/logistica.json generado con éxito (${RECORDS.length} despachos, ${RUTAS.length} rutas).`);
 }
 
-// Ejecutar generadores
-generateRetail();
-generateBanca();
-generateLogistica();
+// Ejecutar generadores (sólo cuando se ejecuta el script, no al importar)
+if (require.main === module) {
+  generateRetail();
+  generateBanca();
+  generateLogistica();
+}
