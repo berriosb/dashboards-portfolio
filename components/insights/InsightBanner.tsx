@@ -29,7 +29,12 @@ export function InsightBanner({
     banca: {
       badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
-      severity: 'Alerta Regulatoria CMF',
+      // Antes decía "Alerta Regulatoria CMF", pero el hallazgo del banner es
+      // sobre mora 30+, que NO es un indicador reportado a la CMF: es el umbral
+      // interno de alerta temprana. Rotularlo como regulatorio contradecía la
+      // corrección aplicada al chart, que separa la banda de referencia del
+      // proyecto de los límites regulatorios.
+      severity: 'Alerta Temprana Interna',
     },
     logistica: {
       badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60',

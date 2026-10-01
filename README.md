@@ -8,7 +8,7 @@ Una plataforma frontend moderna, accesible y de rendimiento instantáneo (0ms en
 - 🏦 **Banca Comercial & Riesgo Crediticio (`/banca`)** — Calidad de cartera, Mora CMF temprana (30+) vs vencida (90+), aging de provisiones IFRS 9, liquidez y ROE.
 - 🚚 **Logística & Cadena de Suministro (`/logistica`)** — Cumplimiento de entregas OTIF (On-Time In-Full), distribución de lead time P50/P90, concentración de proveedores HHI y Pareto de incidencias.
 
-🌐 **Demo en vivo:** [dashboards-portfolio-berriosb.vercel.app](https://dashboards-portfolio-berriosb.vercel.app)
+🌐 **Demo en vivo:** [dashboards-portfolio.vercel.app](https://dashboards-portfolio.vercel.app) · [Retail](/retail) · [Banca](/banca) · [Logística](/logistica)
 
 ---
 

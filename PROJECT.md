@@ -15,7 +15,7 @@ goal: Vitrina showcase de dashboards para mercado chileno Data/BI
 
 Crear un **proyecto showcase** (no un repositorio técnico más) que demuestre en 10 segundos que sabés hacer dashboards. Es el **front del portafolio**, no la evidencia dura.
 
-A diferencia de los 3 repos técnicos (`retail-bi-chile`, `banca-chile-datos`, `logistica-chile-datos`) que tienen análisis reproducibles con Python + DuckDB, **este es front-end con datos embebidos y sintéticos generados por script**.
+**Este es front-end puro con datos embebidos y sintéticos generados por script.** El pipeline que produce y valida esos datos vive en `scripts/` de este mismo repo: los tres generadores con seed fijo, el validador de invariantes y el calibrador de bandas. No hay repos externos: la evidencia reproducible es el código de este repo, verificable con `pnpm data:generate` y `pnpm data:check`.
 
 ## Lo que NO es
 
@@ -31,7 +31,7 @@ Estado real: **planning**. Nada de lo siguiente está construido todavía; es el
 
 - 🎯 Una **landing page** con 3 cards (retail / banca / logística)
 - 🎯 **3 dashboards interactivos** completos (uno por industria)
-- 🎯 Deployado en Vercel: `dashboards-portfolio-berriosb.vercel.app`
+- 🎯 Deployado en Vercel: `dashboards-portfolio.vercel.app`
 - 🎯 Linkeado desde el profile README `berriosb/berriosb` como primer item
 - 🎯 **Bonus de credibilidad:** los datasets sintéticos generados por un script
   determinista y validados por invariantes. Sin ser un repo de data engineering,
@@ -235,7 +235,7 @@ sin filtro muestren números incompatibles.
 1. Ir a https://vercel.com/new
 2. Conectar GitHub y seleccionar `berriosb/dashboards-portfolio`
 3. Vercel auto-detecta Next.js 16 + pnpm
-4. Deploy → URL: `https://dashboards-portfolio-berriosb.vercel.app`
+4. Deploy → URL: `https://dashboards-portfolio.vercel.app`
 
 **Opción B — vía CLI:**
 ```bash
@@ -251,7 +251,7 @@ vercel --prod       # deploy a producción
 
 ### URL objetivo
 
-- **Producción:** `https://dashboards-portfolio-berriosb.vercel.app`
+- **Producción:** `https://dashboards-portfolio.vercel.app`
 - **Custom domain (opcional, no bloqueante):** `dashboards.berriosb.cl` vía NIC Chile → Vercel
 
 ### Después de conectado
