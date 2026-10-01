@@ -35,18 +35,18 @@ Cada uno de los 3 tableros incorpora 3 componentes clave diseñados para directo
 
 | Dashboard | KPI Principal | Definición / Fórmula | Benchmark Mercado Chileno |
 |---|---|---|---|
-| **Retail** | **Facturación Total** | Suma neta de ingresos por ventas en CLP | Reconciliado con seed determinista |
-| **Retail** | **Margen Bruto** | `(Ventas - Costos) / Ventas` | 32.0% (Promedio retail especializado) |
-| **Retail** | **Segmentación RFM** | Matriz 5x5 algorítmica de Recencia, Frecuencia y Monto | Modelo Quintil (Campeones, Leales, En Riesgo, Dormidos) |
-| **Retail** | **Conversión Embudo** | `Sesiones → Carrito → Checkout → Pago` | 2.5% (Tasa conversión e-commerce CCS) |
-| **Banca** | **Mora 30+ CMF** | Saldo vencido > 30 días / Cartera Bruta | 2.5% (Umbral regulatorio de alerta CMF) |
-| **Banca** | **Mora 90+ CMF** | Saldo vencido > 90 días / Cartera Bruta | 1.0% (Gatillo provisiones castigadas) |
-| **Banca** | **Cobertura Provisiones** | Provisiones constituidas / Cartera con mora | 130.0% (Estándar de solvencia IFRS 9) |
-| **Banca** | **ROE Anualizado** | Utilidad neta anualizada / Patrimonio promedio | 14.5% (Promedio sistema bancario ABIF/CMF) |
-| **Logística** | **Cumplimiento OTIF** | % de órdenes entregadas a tiempo y completas | 95.0% (Estándar logístico EDI Chile) |
+| **Retail** | **Facturación Total** | Suma neta de ingresos por ventas en CLP | $92.000.000 (Presupuesto anual aprobado por el directorio) |
+| **Retail** | **Margen Bruto** | `(Ventas - Costos) / Ventas` | 40.0% (Rango objetivo industria retail chilena, 35-45%) |
+| **Retail** | **Segmentación RFM** | Matriz 5x5 por **quintiles reales** derivados de la distribución de la ventana activa | Quinta parte de la base en cada quintil (Campeones, Leales, En Riesgo, Dormidos) |
+| **Retail** | **Conversión Embudo** | `Sesiones → Carrito → Checkout → Pago` | 3.0% (Mediana e-commerce en retail chileno) |
+| **Banca** | **Mora 30+ CMF** | Saldo con 30+ días de atraso / Cartera Bruta | 2.5% (Umbral interno de alerta temprana; la CMF no publica un umbral 30+) |
+| **Banca** | **Mora 90+ CMF** | Saldo con 90+ días de atraso / Cartera Bruta | 2.0% (Morosidad 90+ del sistema bancario chileno, CMF) |
+| **Banca** | **Cobertura Provisiones** | Stock de provisiones constituidas / Saldo en mora 90+ | 150%-260% (Banda de referencia del proyecto, `scripts/calibrate-banca.ts`) |
+| **Banca** | **ROE Anualizado** | Utilidad neta anualizada / Patrimonio | 14.5% (Promedio histórico banca chilena, CMF) |
+| **Logística** | **Cumplimiento OTIF** | % de órdenes entregadas a tiempo **y** completas (conjunción, no producto de tasas) | 95.0% (Estándar internacional EDI / ASOEX) |
 | **Logística** | **Lead Time P50 / P90** | Percentiles 50 y 90 de duración en tránsito (hrs) | 18.0 hrs P50 / 36.0 hrs P90 (SLA estándar) |
-| **Logística** | **Concentración HHI** | Índice Herfindahl-Hirschman de flota: $\sum s_i^2$ | < 1,800 pts (Mercado moderadamente concentrado) |
-| **Logística** | **Fill Rate** | Unidades despachadas / Unidades solicitadas | 98.0% (Exactitud en picking de CD) |
+| **Logística** | **Concentración HHI** | Índice Herfindahl-Hirschman de flota: $\sum s_i^2$ | < 1.800 pts (DOJ / FTC: < 1.500 moderado, > 2.500 concentrado) |
+| **Logística** | **Fill Rate** | Unidades despachadas / Unidades solicitadas | 98.0% (Estándar de retail y distribución chilena) |
 
 ---
 
@@ -95,9 +95,10 @@ dashboards-portfolio/
 │   ├── generate-data.ts       # Generador determinista de datos sintéticos con seed fijo
 │   └── check-data.ts          # Validador de invariantes numéricas y reconciliación de KPIs
 └── tests/
-    ├── data-engine.test.ts    # Tests unitarios del motor Retail
-    ├── banca-engine.test.ts   # Tests unitarios del motor Banca
-    └── logistica-engine.test.ts # Tests unitarios del motor Logística
+    ├── data-engine.test.ts      # Tests unitarios del motor Retail
+    ├── banca-data-engine.test.ts # Tests unitarios del motor Banca
+    ├── logistica-data-engine.test.ts # Tests unitarios del motor Logística
+    └── window-and-benchmarks.test.ts # Invariantes de ventana, deltas y benchmarks
 ```
 
 ---
@@ -138,11 +139,48 @@ Visita [http://localhost:3000](http://localhost:3000) en tu navegador para inter
 ## 🧪 Comandos de Calidad y Verificación
 
 ```bash
-pnpm test             # Ejecuta los 10 tests unitarios con Vitest
+pnpm test             # Ejecuta los 48 tests unitarios con Vitest
 pnpm data:check       # Verifica invariantes de integridad en los 3 datasets
 pnpm tsc --noEmit     # Comprobación de tipos en TypeScript estricto
 pnpm build            # Compilación de producción en Next.js (SSG/ISR)
 ```
+
+### ⚖️ El peso de `/banca` es una decisión, no un descuido
+
+Las tres rutas se prerenderizan estáticamente y el dataset viaja dentro del HTML,
+así que el HTML prerenderizado **es** el peso de la primera carga:
+
+| Ruta | HTML crudo | gzip | brotli |
+|---|---|---|---|
+| `/` | 82 KB | 13 KB | — |
+| `/retail` | 330 KB | 30 KB | 20 KB |
+| `/logistica` | 534 KB | 42 KB | 29 KB |
+| **`/banca`** | **8,1 MB** | **1,0 MB** | **643 KB** |
+
+`/banca` pesa 20-30x más que las otras dos y conviene decirlo explícitamente. La
+causa es `historialCartera`: 72.805 puntos mensuales (6.131 créditos × 12 meses)
+que existen para que **la curva de mora se mida en vez de fabricarse**, que es lo
+que hace que este dashboard sea defendible frente a uno con una rampa inventada.
+
+Se evaluaron tres vías para reducirlo y se descartaron a propósito:
+
+1. **Compactar el formato** (eje de meses compartido + arrays posicionales):
+   6,91 MB → 3,67 MB en disco, pero solo **-17% en gzip** (935 KB → 773 KB),
+   porque gzip ya comprime las claves repetidas y el costo real son los números.
+   No compensaba un refactor de 5 archivos.
+2. **Reducir el volumen de créditos**: `scripts/check-data.ts` exige que la cola
+   90+ tenga **≥ 50 créditos** para que el ratio no lo decida un puñado de
+   clientes. Con la tasa de mora 90+ fijada en 1,68% por banda, el piso está en
+   ~2.800 créditos, y llegar ahí deja la cola exactamente en el mínimo: se
+   compra un 50% de gzip a costa de la robustez estadística que el invariante
+   protege.
+3. **Cargar el historial bajo demanda**: es la solución técnicamente correcta
+   (el HTML inicial bajaría a ~80 KB y los 7 MB se servirían como asset
+   cacheable una sola vez), pero cambia el modelo de datos del proyecto y queda
+   como mejora futura.
+
+Se prefirió conservar la calidad del dato y la estabilidad estadística, y
+documentar el costo en vez de ocultarlo.
 
 ---
 

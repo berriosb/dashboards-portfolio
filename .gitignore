@@ -48,3 +48,5 @@ coverage/
 .minimax/
 .pi/
 skills-lock.json
+# Local Pi runtime state
+.atl/

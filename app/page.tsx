@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
 import {
   ShoppingCart,
   Landmark,
@@ -19,6 +20,7 @@ export default function Home() {
   const dashboards = [
     {
       id: 'retail',
+      repoName: 'retail-bi-chile',
       title: 'Retail Omnicanal & Fidelización',
       industry: 'Retail & Consumo Masivo',
       status: 'active',
@@ -28,9 +30,9 @@ export default function Home() {
       description:
         'Monitoreo ejecutivo de transacciones omnicanal, márgenes por categoría, embudo digital y segmentación algorítmica de clientes RFM.',
       metrics: [
-        { label: 'Ventas Netas', value: '$291M CLP', note: '+8.7% vs prev' },
-        { label: 'Margen Bruto', value: '39,1%', note: 'Meta: 40%' },
-        { label: 'Ticket Promedio', value: '$48.513', note: 'CCS: $42.000' },
+        { label: 'Ventas Netas', value: '$37,7M CLP', note: 'Margen bruto 42,9%' },
+        { label: 'Margen Bruto', value: '42,9%', note: 'Meta: 40%' },
+        { label: 'Ticket Promedio', value: '$153.372', note: 'Meta: $170.000' },
       ],
       features: [
         'Matriz RFM 5x5 nativa (CSS Grid + Radix Tooltips)',
@@ -43,6 +45,7 @@ export default function Home() {
     },
     {
       id: 'banca',
+      repoName: 'banca-chile-datos',
       title: 'Banca & Riesgo Crediticio',
       industry: 'Servicios Financieros & Banca',
       status: 'active',
@@ -52,9 +55,9 @@ export default function Home() {
       description:
         'Gestión de cartera crediticia comercial y de consumo, mora temprana y tardía CMF, matrices de transición de riesgo y curvas vintage.',
       metrics: [
-        { label: 'Cartera Vigente', value: '$1.420M CLP', note: 'Consumo y PyME' },
-        { label: 'Mora CMF 90+', value: '2,4%', note: 'Límite regulatorio: 1.0%' },
-        { label: 'Concentración HHI', value: '1.240 pts', note: 'Rango diversificado' },
+        { label: 'Cartera Vigente', value: '$198.454M CLP', note: 'Consumo y PyME' },
+        { label: 'Mora CMF 90+', value: '1,7%', note: 'Banda de referencia: 1,5% - 2,9%' },
+        { label: 'Cobertura Provisiones', value: '168,7%', note: 'Banda de referencia: 150% - 260%' },
       ],
       features: [
         'Curvas vintage de cosechas de crédito (12 a 36 meses)',
@@ -67,6 +70,7 @@ export default function Home() {
     },
     {
       id: 'logistica',
+      repoName: 'logistica-chile-datos',
       title: 'Logística & Cadena de Suministro',
       industry: 'Distribución & Última Milla',
       status: 'active',
@@ -116,7 +120,7 @@ export default function Home() {
           <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
             <Link
               href="/retail"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all shadow-sm hover:shadow-md"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm transition-all shadow-sm hover:shadow-md"
             >
               <span>Explorar Dashboard Retail</span>
               <ArrowRight className="w-4 h-4" />
@@ -208,7 +212,7 @@ export default function Home() {
                           <div className="text-sm font-bold text-foreground tabular-nums">
                             {m.value}
                           </div>
-                          <div className="text-[9px] text-muted-foreground/80 truncate">
+                          <div className="text-[9px] text-muted-foreground truncate">
                             {m.note}
                           </div>
                         </div>
@@ -231,23 +235,26 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Footer de la tarjeta con CTA */}
-                  <div className="pt-6 mt-6 border-t border-border/70 space-y-2">
-                    <div className="text-[11px] text-muted-foreground flex items-center justify-between">
-                      <span>Benchmark:</span>
-                      <strong className="text-foreground font-medium truncate max-w-[170px]" title={dash.benchmark}>
-                        {dash.benchmark}
-                      </strong>
+                  {/* Footer de la tarjeta con CTA y Evidencia Técnica */}
+                  <div className="pt-5 mt-5 border-t border-border/70 space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <span>Benchmark:</span>
+                        <strong className="text-foreground font-medium truncate max-w-[140px]" title={dash.benchmark}>
+                          {dash.benchmark}
+                        </strong>
+                      </div>
+                      <RepoLinkBadge repoName={dash.repoName} variant="pill" />
                     </div>
 
                     <Link
                       href={dash.href}
                       className={`w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-xs transition-all shadow-xs ${
                         dash.accentColor === 'blue'
-                          ? 'bg-blue-600 hover:bg-blue-700'
+                          ? 'bg-blue-700 hover:bg-blue-800'
                           : dash.accentColor === 'emerald'
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-amber-600 hover:bg-amber-700'
+                          ? 'bg-emerald-700 hover:bg-emerald-800'
+                          : 'bg-amber-700 hover:bg-amber-800'
                       }`}
                     >
                       <span>{dash.cta}</span>
@@ -328,21 +335,21 @@ export default function Home() {
           <div className="flex items-center gap-2.5 flex-wrap shrink-0">
             <Link
               href="/retail"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-medium text-xs transition-all shadow-xs"
             >
               <span>Retail</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
             <Link
               href="/banca"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs transition-all shadow-xs"
             >
               <span>Banca</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
             <Link
               href="/logistica"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-medium text-xs transition-all shadow-xs"
             >
               <span>Logística</span>
               <ArrowRight className="w-3.5 h-3.5" />
