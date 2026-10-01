@@ -1,4 +1,5 @@
-import { calculateRfmScores, CustomerRfmScore } from './rfm';
+import { calculateRfm, type RfmAxes } from './rfm';
+import { describeWindow, type CompareMode, type WindowMeta } from './comparison';
 
 export interface RetailTransaction {
   id: string;
@@ -96,19 +97,27 @@ export interface AggregatedResult {
     customerCount: number;
     avgTicket: number;
   }>;
+  /** Rangos reales de cada quintil, para rotular los ejes del heatmap. */
+  rfmAxes: RfmAxes;
   filteredCount: number;
   totalCount: number;
   filteredRecords: RetailTransaction[];
 }
 
-export function filterAndAggregateRetail(
+function aggregateRetail(
   dataset: RetailDataset,
   filters: FilterState
 ): AggregatedResult {
   const { dateRange, categories, channels, regions, rfmSegment } = filters;
 
-  // 1. Calcular scores RFM globales de clientes para poder filtrar por segmento RFM
-  const rfmScores = calculateRfmScores(dataset.records, dataset.meta.periodoFin);
+  // 1. Calcular scores RFM globales de clientes para poder filtrar por segmento RFM.
+  //    La recencia se ancla al cierre de la ventana activa: anclarla a la fecha
+  //    de fin del dataset hacía que el heatmap mintiera sobre la recencia bajo
+  //    cualquier filtro temporal.
+  const { scores: rfmScores, axes: rfmAxes } = calculateRfm(
+    dataset.records,
+    dateRange.end
+  );
 
   // 2. Filtrar transacciones
   const filteredRecords = dataset.records.filter((r) => {
@@ -222,7 +231,10 @@ export function filterAndAggregateRetail(
 
   // Matriz RFM 5x5 calculada sobre clientes del conjunto filtrado
   const filteredCustomerIds = new Set(filteredRecords.map((r) => r.customerId));
-  const rfmCellMap = new Map<string, { count: number; totalSpent: number; segment: string }>();
+  const rfmCellMap = new Map<
+    string,
+    { count: number; windowSales: number; windowOrders: number; segment: string }
+  >();
 
   for (let r = 1; r <= 5; r++) {
     for (let f = 1; f <= 5; f++) {
@@ -231,8 +243,29 @@ export function filterAndAggregateRetail(
       else if (r >= 3 && f >= 3) seg = 'Loyal';
       else if (r >= 3 && f <= 2) seg = 'Potential';
       else if (r <= 2 && f >= 3) seg = 'At Risk';
-      rfmCellMap.set(`${r}-${f}`, { count: 0, totalSpent: 0, segment: seg });
+      rfmCellMap.set(`${r}-${f}`, {
+        count: 0,
+        windowSales: 0,
+        windowOrders: 0,
+        segment: seg,
+      });
     }
+  }
+
+  // El ticket promedio de la celda se mide sobre el PERÍODO VISIBLE, no sobre
+  // el gasto histórico vitalicio del cliente: `score.totalSpent` suma toda la
+  // vida del cliente y al dividirlo por la cantidad de clientes daba el valor
+  // de vida, no el ticket (la celda R5-F5 marcaba 8,8x el ticket real).
+  const windowSpendByCustomer = new Map<string, { sales: number; orders: Set<string> }>();
+  for (const r of filteredRecords) {
+    if (r.isReturn) continue;
+    let entry = windowSpendByCustomer.get(r.customerId);
+    if (!entry) {
+      entry = { sales: 0, orders: new Set() };
+      windowSpendByCustomer.set(r.customerId, entry);
+    }
+    entry.sales += r.amount;
+    entry.orders.add(r.orderId);
   }
 
   for (const cId of filteredCustomerIds) {
@@ -242,7 +275,11 @@ export function filterAndAggregateRetail(
     const cell = rfmCellMap.get(key);
     if (cell) {
       cell.count++;
-      cell.totalSpent += score.totalSpent;
+      const inWindow = windowSpendByCustomer.get(cId);
+      if (inWindow) {
+        cell.windowSales += inWindow.sales;
+        cell.windowOrders += inWindow.orders.size;
+      }
     }
   }
 
@@ -255,7 +292,8 @@ export function filterAndAggregateRetail(
         frequency: f,
         segment: cell.segment,
         customerCount: cell.count,
-        avgTicket: cell.count > 0 ? Math.round(cell.totalSpent / cell.count) : 0,
+        avgTicket:
+          cell.windowOrders > 0 ? Math.round(cell.windowSales / cell.windowOrders) : 0,
       });
     }
   }
@@ -266,20 +304,85 @@ export function filterAndAggregateRetail(
       ticketPromedio,
       margenBrutoPct,
       pedidosTotales: orderCount,
-      tasaConversion: dataset.precomputed.funnel[2].value / dataset.precomputed.funnel[0].value * 100,
-      nps: Math.round(
-        ((dataset.precomputed.nps.promotores - dataset.precomputed.nps.detractores) /
-          dataset.precomputed.nps.encuestas) *
-          100
-      ),
+      tasaConversion:
+        dataset.precomputed.funnel[0].value > 0
+          ? (dataset.precomputed.funnel[2].value / dataset.precomputed.funnel[0].value) * 100
+          : 0,
+      nps:
+        dataset.precomputed.nps.encuestas > 0
+          ? Math.round(
+              ((dataset.precomputed.nps.promotores - dataset.precomputed.nps.detractores) /
+                dataset.precomputed.nps.encuestas) *
+                100
+            )
+          : 0,
       clientesRecurrentes,
     },
     ventasPorCategoria,
     tendenciaMensual,
     ventasPorCanal,
     rfmMatrix,
+    rfmAxes,
     filteredCount: filteredRecords.length,
     totalCount: dataset.records.length,
     filteredRecords,
   };
+}
+
+/**
+ * KPIs que el dataset entrega ya agregados para el período completo
+ * (`precomputed`) y que por lo tanto no admiten comparación mes a mes.
+ */
+const METRICAS_CONSTANTES_DEL_PERIODO: Array<keyof AggregatedResult['kpis']> = [
+  'tasaConversion',
+  'nps',
+];
+
+/**
+ * Ventana activa + ventana de comparación.
+ *
+ * `previousKpis` es `null` cuando no existe un período comparable dentro de la
+ * cobertura del dataset. En ese caso los KPIs se muestran SIN delta: es
+ * preferible no mostrar nada antes que inventar un 0,0% que se lee como
+ * "no se movió".
+ */
+/**
+ * Cada KPI del período anterior puede ser `null`: significa "no hay dato
+ * comparable", no "cero". Los llamadores pasan `?? null` a la tarjeta y ésta
+ * omite el badge de variación en vez de mostrar un 0,0% inventado.
+ */
+export type PreviousRetailKpis = {
+  [K in keyof AggregatedResult['kpis']]: AggregatedResult['kpis'][K] | null;
+};
+
+export interface AggregatedResultWithWindow extends AggregatedResult {
+  window: WindowMeta;
+  previousKpis: PreviousRetailKpis | null;
+}
+
+export function filterAndAggregateRetail(
+  dataset: RetailDataset,
+  filters: FilterState,
+  opts: { compareMode?: CompareMode } = {}
+): AggregatedResultWithWindow {
+  const current = aggregateRetail(dataset, filters);
+  const window = describeWindow(filters.dateRange, dataset.meta, opts.compareMode);
+
+  let previousKpis: PreviousRetailKpis | null = null;
+  if (window.previous) {
+    // Se re-agregan los MISMOS filtros con la ventana anterior desplazada:
+    // el delta siempre es apples-to-apples, incluso con filtros por categoría.
+    previousKpis = aggregateRetail(dataset, { ...filters, dateRange: window.previous }).kpis;
+
+    // Estas KPIs se derivan de `dataset.precomputed`, que es una constante del
+    // período completo: no cambian con la ventana. Compararlas contra sí
+    // misma daría siempre 0,0%, que en pantalla se lee como "no se movió" en
+    // vez de "no tengo desagregación temporal". Se anula el delta en vez de
+    // fabricar uno.
+    for (const key of METRICAS_CONSTANTES_DEL_PERIODO) {
+      previousKpis[key] = null;
+    }
+  }
+
+  return { ...current, window, previousKpis };
 }

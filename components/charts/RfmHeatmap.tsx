@@ -3,6 +3,7 @@
 import React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { formatCLP, formatNumber } from '@/lib/format';
+import type { RfmAxes, RfmQuintileBand } from '@/lib/rfm';
 
 export interface RfmCellData {
   recency: number;
@@ -14,31 +15,64 @@ export interface RfmCellData {
 
 interface RfmHeatmapProps {
   matrix: RfmCellData[];
+  /** Rangos reales de cada quintil, calculados por el motor sobre la ventana activa. */
+  axes?: RfmAxes;
   selectedSegment?: string | null;
   onSelectSegment?: (segment: string | null) => void;
 }
 
+/**
+ * Etiqueta de un quintil a partir del rango REAL observado en él.
+ *
+ * Antes los ejes anunciaban cortes fijos ("F3 (3-4 comp.)", "F5 (8+ comp.)") que
+ * ya no correspondían a los umbrales del motor: 13 clientes con exactamente 4
+ * compras caían en una celda rotulada "5-7". Ahora el rótulo se arma con el
+ * mínimo y el máximo que el quintil efectivamente contiene, así que la
+ * etiqueta y el corte que produjo la celda no pueden desincronizarse.
+ */
+function bandLabel(
+  band: RfmQuintileBand | undefined,
+  unit: string
+): string {
+  if (!band || band.count === 0) return `— ${unit}`;
+  if (band.min === band.max) return `${band.min} ${unit}`;
+  return `${band.min}-${band.max} ${unit}`;
+}
+
+function recencyLabel(band: RfmQuintileBand | undefined): string {
+  if (!band || band.count === 0) return '—';
+  if (band.score === 5) return `≤${band.max}d`;
+  if (band.score === 1) return `>${band.min - 1}d`;
+  return `${band.min}-${band.max}d`;
+}
+
 export function RfmHeatmap({
   matrix,
+  axes,
   selectedSegment,
   onSelectSegment,
 }: RfmHeatmapProps) {
   // Encontrar el valor máximo de clientes para normalizar la escala de color
   const maxCount = Math.max(...matrix.map((c) => c.customerCount), 1);
 
-  // Paleta de intensidad basada en densidad de clientes (monocromática azul según AGENTS.md)
+  // Paleta de intensidad basada en densidad de clientes (monocromática azul según AGENTS.md).
+  // La rampa alterna fondo claro con texto oscuro y fondo oscuro con texto claro,
+  // en vez de poner `text-white` sobre azules medios: blanco sobre blue-600 queda
+  // en 3.76:1 y bajo 4.5:1. Cada par de la rampa está por encima de 4.5:1.
   const getCellColor = (count: number, isSelected: boolean) => {
-    if (count === 0) return 'bg-muted/15 text-muted-foreground/30 border-dashed border-border/40';
+    // Las celdas vacías igual necesitan leerse: antes iban en muted/15 con texto
+    // al 30%, o sea 1.48:1, prácticamente invisibles.
+    if (count === 0) return 'bg-muted/50 text-muted-foreground border-dashed border-border';
     const ratio = count / maxCount;
 
     if (isSelected) {
-      return 'bg-blue-600 text-white font-black ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-950 shadow-md scale-102';
+      return 'bg-blue-700 text-white font-black ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-950 shadow-md scale-102';
     }
 
-    if (ratio > 0.75) return 'bg-blue-600 text-white font-black hover:bg-blue-700 border-blue-700 shadow-xs';
-    if (ratio > 0.5) return 'bg-blue-500 text-white font-bold hover:bg-blue-600 border-blue-600';
-    if (ratio > 0.25) return 'bg-blue-100 text-blue-950 font-semibold hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-100 border-blue-200/60 dark:border-blue-800/40';
-    return 'bg-blue-50/70 text-blue-900 font-medium hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-200 border-blue-100 dark:border-blue-900/30';
+    if (ratio > 0.75) return 'bg-blue-700 text-white font-black hover:bg-blue-800 border-blue-800 shadow-xs';
+    if (ratio > 0.5) return 'bg-blue-300 text-blue-950 font-bold hover:bg-blue-400 border-blue-400 dark:bg-blue-400 dark:text-blue-950 dark:border-blue-300';
+    if (ratio > 0.25) return 'bg-blue-100 text-blue-950 font-semibold hover:bg-blue-200 dark:bg-blue-200 dark:text-blue-950 border-blue-200/60 dark:border-blue-300/60';
+    return 'bg-blue-50/70 text-blue-900 font-medium hover:bg-blue-100 dark:bg-blue-100/70 dark:text-blue-950 border-blue-100 dark:border-blue-200';
   };
 
   return (
@@ -53,7 +87,7 @@ export function RfmHeatmap({
               key={seg}
               type="button"
               onClick={() => onSelectSegment?.(isActive ? null : seg)}
-              className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
+              className={`px-2.5 min-h-11 rounded-lg text-xs transition-all ${
                 isActive
                   ? 'bg-blue-600 text-white font-semibold shadow-xs'
                   : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted font-medium'
@@ -76,14 +110,15 @@ export function RfmHeatmap({
 
       <TooltipPrimitive.Provider delayDuration={150}>
         <div className="relative pt-1">
-          {/* Eje Y: Recencia */}
+          {/* Eje Y: Recencia. Va de mejor (arriba) a peor (abajo); los quintiles
+              llegan ordenados de score 5 a 1. */}
           <div className="flex">
             <div className="w-12 shrink-0 flex flex-col justify-around text-right pr-2.5 text-[10px] font-semibold text-muted-foreground">
-              <span title="Última compra hace ≤ 30 días">R5 (30d)</span>
-              <span title="Última compra hace 31-60 días">R4 (60d)</span>
-              <span title="Última compra hace 61-120 días">R3 (120d)</span>
-              <span title="Última compra hace 121-240 días">R2 (240d)</span>
-              <span title="Última compra hace > 240 días">R1 (+240d)</span>
+              {([5, 4, 3, 2, 1] as const).map((score) => (
+                <span key={score} title={`Quintil de recencia ${score} de 5`}>
+                  R{score} ({recencyLabel(axes?.recency.find((b) => b.score === score))})
+                </span>
+              ))}
             </div>
 
             {/* Matriz 5x5 */}
@@ -102,13 +137,24 @@ export function RfmHeatmap({
                           cell.customerCount,
                           isSelected
                         )} ${isFilteredOut ? 'opacity-25 grayscale' : 'opacity-100'}`}
-                        aria-label={`R${cell.recency} F${cell.frequency}: ${cell.customerCount} clientes en ${cell.segment}`}
+                        // Sin aria-label: el nombre accesible sale del contenido visible, que es
+                        // lo que exige WCAG 2.5.3 (Label in Name) de forma robusta. Con
+                        // aria-label el texto visible se concatena como "2POTENTIAL" y el
+                        // nombre debe contener esa cadena exacta, cosa que ninguna etiqueta
+                        // alterna resuelve bien. El contexto R/F va en un span sr-only, que se
+                        // suma al nombre accesible sin alterar lo que se ve.
                       >
                         <span className="text-sm font-black tabular-nums leading-none">
                           {formatNumber(cell.customerCount)}
                         </span>
-                        <span className="text-[9px] uppercase tracking-tight truncate max-w-full opacity-80 mt-1 font-semibold">
+                        {/* Sin `opacity-80`: bajar la opacidad del 9px lo dejaba en
+                            ~3.9:1 incluso sobre los azules oscuros. La jerarquía la
+                            dan el tamaño y el uppercase. */}
+                        <span className="text-[9px] uppercase tracking-tight truncate max-w-full mt-1 font-semibold">
                           {cell.segment}
+                        </span>
+                        <span className="sr-only">
+                          , celda R{cell.recency} F{cell.frequency}
                         </span>
                       </button>
                     </TooltipPrimitive.Trigger>
@@ -153,11 +199,11 @@ export function RfmHeatmap({
           <div className="flex pt-2">
             <div className="w-12 shrink-0" />
             <div className="grid grid-cols-5 gap-2 flex-1 text-center text-[10px] font-semibold text-muted-foreground">
-              <span>F1 (1 comp.)</span>
-              <span>F2 (2 comp.)</span>
-              <span>F3 (3-4 comp.)</span>
-              <span>F4 (5-7 comp.)</span>
-              <span>F5 (8+ comp.)</span>
+              {([1, 2, 3, 4, 5] as const).map((score) => (
+                <span key={score}>
+                  F{score} ({bandLabel(axes?.frequency.find((b) => b.score === score), 'comp.')})
+                </span>
+              ))}
             </div>
           </div>
         </div>
