@@ -27,7 +27,7 @@ Cada uno de los 3 tableros incorpora 3 componentes clave diseñados para directo
 
 1. **`<InsightBanner />`:** Banner superior que sintetiza el hallazgo analítico más relevante del período y entrega una recomendación de negocio inmediata y accionable.
 2. **`<GlossaryTooltip />`:** Glosario contextual con tooltip accesible sobre cada KPI, explicando la fórmula y el estándar del mercado chileno (normativa CMF, índices CCS, estándares EDI Chile, DOJ/FTC).
-3. **`<RepoLinkBadge />`:** Acceso directo a la evidencia de ingeniería de datos y pipelines reproducibles en GitHub ([`retail-bi-chile`](https://github.com/berriosb/retail-bi-chile), [`banca-chile-datos`](https://github.com/berriosb/banca-chile-datos), [`logistica-chile-datos`](https://github.com/berriosb/logistica-chile-datos)).
+3. **`<RepoLinkBadge />`:** Enlace directo al pipeline que produjo los datos que estás viendo: los tres generadores con seed fijo, el validador de invariantes y el calibrador de bandas viven en [`scripts/`](https://github.com/berriosb/dashboards-portfolio/tree/main/scripts) de este mismo repo, y se reproducen con `pnpm data:generate` + `pnpm data:check`. No hay repos externos involved: la evidencia es el código que estás leyendo.
 
 ---
 

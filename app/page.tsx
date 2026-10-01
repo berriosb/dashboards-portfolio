@@ -20,7 +20,6 @@ export default function Home() {
   const dashboards = [
     {
       id: 'retail',
-      repoName: 'retail-bi-chile',
       title: 'Retail Omnicanal & Fidelización',
       industry: 'Retail & Consumo Masivo',
       status: 'active',
@@ -45,7 +44,6 @@ export default function Home() {
     },
     {
       id: 'banca',
-      repoName: 'banca-chile-datos',
       title: 'Banca & Riesgo Crediticio',
       industry: 'Servicios Financieros & Banca',
       status: 'active',
@@ -70,7 +68,6 @@ export default function Home() {
     },
     {
       id: 'logistica',
-      repoName: 'logistica-chile-datos',
       title: 'Logística & Cadena de Suministro',
       industry: 'Distribución & Última Milla',
       status: 'active',
@@ -244,7 +241,7 @@ export default function Home() {
                           {dash.benchmark}
                         </strong>
                       </div>
-                      <RepoLinkBadge repoName={dash.repoName} variant="pill" />
+                      <RepoLinkBadge label="Pipeline de datos" variant="pill" />
                     </div>
 
                     <Link

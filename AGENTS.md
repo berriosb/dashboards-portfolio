@@ -64,7 +64,7 @@ Conjunto de reglas anti-slop de aplicación inmediata:
 Todo dashboard debe incluir obligatoriamente los 3 elementos de conversión para reclutadores:
 1. `<InsightBanner />`: Tarjeta superior visible con hallazgo analítico crítico y recomendación de negocio accionable.
 2. `<GlossaryTooltip />`: Tooltip con icono `Info` en métricas técnicas locales (Mora CMF 90+, OTIF, HHI, RFM).
-3. `<RepoLinkBadge />`: Enlace visible a la evidencia técnica reproducible en GitHub (`retail-bi-chile`, etc.).
+3. `<RepoLinkBadge />`: Enlace visible a la evidencia técnica reproducible en GitHub. La evidencia es el pipeline de este mismo repo (`scripts/generate-data.ts`, `scripts/check-data.ts`, `scripts/calibrate-banca.ts`), verificable con `pnpm data:generate`. No apuntar a repos externos que no existan.
 
 ---
 

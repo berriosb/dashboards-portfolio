@@ -94,7 +94,7 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto lg:justify-end">
-          <RepoLinkBadge repoName="banca-chile-datos" />
+          <RepoLinkBadge label="Pipeline de datos" />
           <button
             type="button"
             onClick={() => setIsDrilldownOpen(true)}

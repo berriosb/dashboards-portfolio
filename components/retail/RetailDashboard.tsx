@@ -122,7 +122,7 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
 
         {/* Acciones de senior / Recruiter Hooks */}
         <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto lg:justify-end">
-          <RepoLinkBadge repoName="retail-bi-chile" />
+          <RepoLinkBadge label="Pipeline de datos" />
           <button
             type="button"
             onClick={() => openDrilldown('skus')}
