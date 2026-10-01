@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Share2, Check } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { acentoDeRuta } from '@/lib/dashboard-accent';
 
 interface ShareViewButtonProps {
   label?: string;
@@ -13,6 +15,10 @@ export function ShareViewButton({
   className = '',
 }: ShareViewButtonProps) {
   const [copied, setCopied] = useState(false);
+  // Este botón se monta en los tres dashboards: con emerald fijo metía un
+  // segundo acento en Retail (azul) y Logística (ámbar). Toma el acento de la
+  // ruta que lo monta, igual que el exportador CSV y el toggle de tema.
+  const acento = acentoDeRuta(usePathname());
 
   const handleCopy = async () => {
     try {
@@ -38,13 +44,20 @@ export function ShareViewButton({
     <button
       type="button"
       onClick={handleCopy}
-      aria-label="Copiar enlace con filtros actuales al portapapeles"
-      className={`inline-flex items-center gap-1.5 text-xs font-medium h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-all shadow-xs ${className}`}
+      // El nombre accesible cambia con el estado visible y en ambos casos
+      // arranca por el texto que se ve (WCAG 2.5.3 Label in Name), para que
+      // "Compartir vista" / "¡Enlace copiado!" activen el control por voz.
+      aria-label={
+        copied
+          ? '¡Enlace copiado!'
+          : `${label}: copiar enlace con filtros actuales al portapapeles`
+      }
+      className={`inline-flex items-center gap-1.5 text-xs font-medium min-h-11 px-3 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-all shadow-xs ${className}`}
     >
       {copied ? (
         <>
-          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+          <Check className={`w-3.5 h-3.5 ${acento.text}`} />
+          <span className={`${acento.text} font-semibold`}>
             ¡Enlace copiado!
           </span>
         </>

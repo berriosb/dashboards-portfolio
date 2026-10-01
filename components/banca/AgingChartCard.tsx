@@ -27,12 +27,18 @@ interface AgingChartCardProps {
   onSelectTramo?: (tramo: string | null) => void;
 }
 
+// Rampa de intensidad en un solo tono: emerald, el único acento de Banca.
+// Antes cada tramo llevaba un color distinto (ámbar #d97706, naranja #ea580c y
+// carmín #be123c), o sea tres acentos prohibidos conviviendo con el emerald del
+// hero card. La severidad se lee por la ETIQUETA del tramo y por la intensidad
+// de la rampa, nunca por el color solo. Todos los tonos son medios u oscuros
+// para que las etiquetas del treemap conserven el contraste en ambos temas.
 const TRAMO_COLORS: Record<string, string> = {
-  'Al Día (0d)': '#059669', // Cartera sana / vigente
-  'Mora 1-29d': '#64748b', // Atraso técnico / administrativo leve (slate neutro)
-  'Mora 30-59d': '#d97706', // Alerta temprana CMF (ámbar)
-  'Mora 60-89d': '#ea580c', // Riesgo alto previo a castigo (naranja intenso)
-  'Mora 90+d': '#be123c', // Cartera deteriorada / IFRS 9 (carmín crítico)
+  'Al Día (0d)': '#34d399', // Cartera sana / vigente
+  'Mora 1-29d': '#10b981', // Atraso técnico / administrativo leve
+  'Mora 30-59d': '#059669', // Alerta temprana interna
+  'Mora 60-89d': '#047857', // Riesgo alto previo a castigo
+  'Mora 90+d': '#065f46', // Cartera deteriorada (IFRS 9 stage 3)
 };
 
 export function AgingChartCard({
