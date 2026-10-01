@@ -6,6 +6,11 @@ interface InsightBannerProps {
   descripcion: string;
   accionRecomendada: string;
   variant?: 'retail' | 'banca' | 'logistica';
+  /**
+   * Nivel del título. Por defecto `h2`: el banner es la primera sección después
+   * del `h1` de la página y antes iba en `h3`, dejando un salto h1 → h3.
+   */
+  headingLevel?: 'h2' | 'h3' | 'h4';
 }
 
 export function InsightBanner({
@@ -13,6 +18,7 @@ export function InsightBanner({
   descripcion,
   accionRecomendada,
   variant = 'retail',
+  headingLevel: Heading = 'h2',
 }: InsightBannerProps) {
   const config = {
     retail: {
@@ -57,9 +63,9 @@ export function InsightBanner({
             </span>
           </div>
 
-          <h3 className="font-bold text-foreground text-sm sm:text-base tracking-tight leading-snug">
+          <Heading className="font-bold text-foreground text-sm sm:text-base tracking-tight leading-snug">
             {titulo}
-          </h3>
+          </Heading>
 
           <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed text-pretty">
             {descripcion}

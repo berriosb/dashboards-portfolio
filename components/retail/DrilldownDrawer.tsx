@@ -12,6 +12,7 @@ import { formatCLP, formatNumber } from '@/lib/format';
 import { Search, Package, Users, ArrowUpDown } from 'lucide-react';
 import { RetailDataset, RetailTransaction } from '@/lib/data-engine';
 import { calculateRfmScores } from '@/lib/rfm';
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
 
 interface DrilldownDrawerProps {
   isOpen: boolean;
@@ -121,6 +122,9 @@ export function DrilldownDrawer({
     );
   }, [type, dataset.customers, dataset.records, dataset.meta.periodoFin, filteredRecords, selectedRfmSegment, searchTerm, sortField]);
 
+  const maxSales = useMemo(() => Math.max(...skuData.map((s) => s.ventas), 1), [skuData]);
+  const maxSpend = useMemo(() => Math.max(...customerData.map((c) => c.totalSpent), 1), [customerData]);
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-6">
@@ -186,6 +190,39 @@ export function DrilldownDrawer({
             >
               {type === 'skus' ? 'Unidades' : 'Pedidos'}
             </button>
+            {type === 'skus' ? (
+              <ExportCsvButton
+                data={skuData}
+                filename="catalogo_skus_filtrado"
+                columns={[
+                  { key: 'id', label: 'SKU ID' },
+                  { key: 'nombre', label: 'Producto' },
+                  { key: 'categoria', label: 'Categoría' },
+                  { key: 'precio', label: 'Precio CLP', format: (v) => formatCLP(Number(v)) },
+                  { key: 'unidades', label: 'Unidades Vendidas' },
+                  { key: 'ventas', label: 'Venta Neta CLP', format: (v) => formatCLP(Number(v)) },
+                ]}
+                label="CSV"
+                className="h-7 text-xs ml-1"
+              />
+            ) : (
+              <ExportCsvButton
+                data={customerData}
+                filename="cartera_clientes_filtrada"
+                columns={[
+                  { key: 'id', label: 'Cliente ID' },
+                  { key: 'nombre', label: 'Nombre' },
+                  { key: 'email', label: 'Email' },
+                  { key: 'region', label: 'Región' },
+                  { key: 'segmento', label: 'Segmento RFM' },
+                  { key: 'ordersCount', label: 'Cant. Pedidos' },
+                  { key: 'daysSinceLastOrder', label: 'Días Última Compra' },
+                  { key: 'totalSpent', label: 'Gasto Acumulado CLP', format: (v) => formatCLP(Number(v)) },
+                ]}
+                label="CSV"
+                className="h-7 text-xs ml-1"
+              />
+            )}
           </div>
         </div>
 
@@ -216,8 +253,12 @@ export function DrilldownDrawer({
                     <td className="py-2 px-3 text-right tabular-nums font-medium">
                       {formatNumber(sku.unidades)}
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums font-semibold text-blue-600 dark:text-blue-400">
-                      {formatCLP(sku.ventas)}
+                    <td className="py-2 px-3 text-right tabular-nums font-semibold text-blue-600 dark:text-blue-400 relative">
+                      <div
+                        className="absolute inset-y-1 right-1 bg-blue-500/10 dark:bg-blue-400/15 rounded-sm pointer-events-none transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (sku.ventas / maxSales) * 100))}%` }}
+                      />
+                      <span className="relative z-10">{formatCLP(sku.ventas)}</span>
                     </td>
                   </tr>
                 ))}
@@ -259,8 +300,12 @@ export function DrilldownDrawer({
                     <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">
                       {c.daysSinceLastOrder}d
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums font-semibold text-blue-600 dark:text-blue-400">
-                      {formatCLP(c.totalSpent)}
+                    <td className="py-2 px-3 text-right tabular-nums font-semibold text-blue-600 dark:text-blue-400 relative">
+                      <div
+                        className="absolute inset-y-1 right-1 bg-blue-500/10 dark:bg-blue-400/15 rounded-sm pointer-events-none transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (c.totalSpent / maxSpend) * 100))}%` }}
+                      />
+                      <span className="relative z-10">{formatCLP(c.totalSpent)}</span>
                     </td>
                   </tr>
                 ))}

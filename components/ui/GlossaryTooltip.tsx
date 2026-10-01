@@ -7,11 +7,28 @@ import { ALL_METRICS } from '@/lib/metric-definitions';
 
 interface GlossaryTooltipProps {
   metricKey: string;
+  /**
+   * Meta ya prorateada a la ventana visible.
+   *
+   * Si no se pasa, el glosario muestra la meta de referencia sin proratear, que
+   * puede no coincidir con la de la tarjeta cuando el filtro es corto. Por eso
+   * las tarjetas le pasan el mismo valor resuelto que muestran ellas.
+   */
+  benchmark?: number;
+  benchmarkSource?: string;
+  benchmarkLabel?: string;
 }
 
-export function GlossaryTooltip({ metricKey }: GlossaryTooltipProps) {
+export function GlossaryTooltip({
+  metricKey,
+  benchmark,
+  benchmarkSource,
+  benchmarkLabel,
+}: GlossaryTooltipProps) {
   const metric = ALL_METRICS[metricKey];
   if (!metric) return null;
+  const shownBenchmark = benchmark ?? metric.benchmark;
+  const shownSource = benchmarkSource ?? metric.benchmarkSource;
 
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
@@ -19,7 +36,7 @@ export function GlossaryTooltip({ metricKey }: GlossaryTooltipProps) {
         <TooltipPrimitive.Trigger asChild>
           <button
             type="button"
-            className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="tap-target inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             aria-label={`Información sobre ${metric.label}`}
           >
             <Info className="w-3.5 h-3.5" />
@@ -36,10 +53,10 @@ export function GlossaryTooltip({ metricKey }: GlossaryTooltipProps) {
             <p className="text-muted-foreground mb-2 leading-relaxed">{metric.formula}</p>
             <div className="border-t border-border pt-2 space-y-1">
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Benchmark: </span>
-                {metric.unit === 'CLP' ? `$${metric.benchmark.toLocaleString('es-CL')}` : `${metric.benchmark}${metric.unit}`}
+                <span className="font-medium text-foreground">{benchmarkLabel ?? 'Benchmark'}: </span>
+                {metric.unit === 'CLP' ? `$${shownBenchmark.toLocaleString('es-CL')}` : `${shownBenchmark}${metric.unit}`}
               </p>
-              <p className="text-[11px] text-muted-foreground/80 italic">{metric.benchmarkSource}</p>
+              <p className="text-[11px] text-muted-foreground italic">{shownSource}</p>
             </div>
             <TooltipPrimitive.Arrow className="fill-border" />
           </TooltipPrimitive.Content>

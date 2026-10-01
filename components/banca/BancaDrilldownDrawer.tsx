@@ -11,6 +11,7 @@ import {
 import { formatCLP, formatNumber } from '@/lib/format';
 import { Search, Landmark, ArrowUpDown } from 'lucide-react';
 import { CreditoRecord } from '@/lib/banca-data-engine';
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
 
 interface BancaDrilldownDrawerProps {
   isOpen: boolean;
@@ -61,6 +62,11 @@ export function BancaDrilldownDrawer({
 
   const totalSaldoDisplay = useMemo(
     () => displayRecords.reduce((acc, r) => acc + r.saldo, 0),
+    [displayRecords]
+  );
+
+  const maxSaldo = useMemo(
+    () => Math.max(...displayRecords.map((r) => r.saldo), 1),
     [displayRecords]
   );
 
@@ -123,6 +129,23 @@ export function BancaDrilldownDrawer({
             >
               Días Mora
             </button>
+            <ExportCsvButton
+              data={displayRecords}
+              filename="cartera_creditos_filtrada"
+              columns={[
+                { key: 'id', label: 'ID Operación' },
+                { key: 'rut', label: 'RUT' },
+                { key: 'nombre', label: 'Deudor' },
+                { key: 'producto', label: 'Producto' },
+                { key: 'segmento', label: 'Segmento' },
+                { key: 'saldo', label: 'Saldo CLP', format: (v) => formatCLP(Number(v)) },
+                { key: 'diasMora', label: 'Días Mora' },
+                { key: 'tramoMora', label: 'Tramo Mora' },
+                { key: 'provision', label: 'Provisión IFRS 9 CLP', format: (v) => formatCLP(Number(v)) },
+              ]}
+              label="CSV"
+              className="h-7 text-xs ml-1"
+            />
           </div>
         </div>
 
@@ -165,8 +188,12 @@ export function BancaDrilldownDrawer({
                     <div className="font-medium text-foreground">{cr.producto}</div>
                     <div className="text-[10px] text-muted-foreground">{cr.segmento}</div>
                   </td>
-                  <td className="py-2 px-3 text-right tabular-nums font-semibold text-foreground">
-                    {formatCLP(cr.saldo)}
+                  <td className="py-2 px-3 text-right tabular-nums font-semibold text-foreground relative">
+                    <div
+                      className="absolute inset-y-1 right-1 bg-emerald-500/10 dark:bg-emerald-400/15 rounded-sm pointer-events-none transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.max(0, (cr.saldo / maxSaldo) * 100))}%` }}
+                    />
+                    <span className="relative z-10">{formatCLP(cr.saldo)}</span>
                   </td>
                   <td className="py-2 px-3 text-right tabular-nums">
                     <span

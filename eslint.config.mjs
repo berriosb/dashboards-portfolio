@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Skills de terceros vendorizadas. `modern-screenshot.umd.js` es un bundle
+    // UMD minificado: lint-earlo no dice nada del proyecto y sus 78 warnings
+    // de no-unused-expressions son ruido puro.
+    ".agents/**",
   ]),
 ]);
 

@@ -11,6 +11,12 @@ interface ChartFrameProps {
   tableComponent?: React.ReactNode;
   headerAction?: React.ReactNode;
   ariaLabel: string;
+  /**
+   * Nivel del título de la card. Por defecto `h2`: cada card es una sección
+   * hermana bajo el `h1` de la página, así que bajar a `h3`/`h4` dejaba saltos
+   * en el outline (h1 → h3 → h4) que rompían la navegación por encabezados.
+   */
+  headingLevel?: 'h2' | 'h3' | 'h4';
 }
 
 export function ChartFrame({
@@ -21,6 +27,7 @@ export function ChartFrame({
   tableComponent,
   headerAction,
   ariaLabel,
+  headingLevel: Heading = 'h2',
 }: ChartFrameProps) {
   const [showTable, setShowTable] = useState(false);
 
@@ -33,9 +40,9 @@ export function ChartFrame({
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-semibold text-foreground text-sm md:text-base tracking-tight">
+            <Heading className="font-semibold text-foreground text-sm md:text-base tracking-tight">
               {title}
-            </h4>
+            </Heading>
             {badge && (
               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground uppercase tracking-wider">
                 {badge}
@@ -53,7 +60,7 @@ export function ChartFrame({
             <button
               type="button"
               onClick={() => setShowTable(!showTable)}
-              className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="tap-target p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               title={showTable ? 'Ver gráfico' : 'Ver tabla de datos'}
               aria-label={showTable ? 'Ver gráfico' : 'Ver tabla accesible'}
             >

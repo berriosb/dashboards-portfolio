@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ShoppingCart, Landmark, Truck } from 'lucide-react';
 import { PrintReportButton } from '@/components/ui/PrintReportButton';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export function Header() {
   const pathname = usePathname();
@@ -43,7 +44,7 @@ export function Header() {
         <div className="flex items-center gap-6">
           <Link
             href="/"
-            className="flex items-center gap-2.5 font-bold tracking-tight text-foreground hover:opacity-90 transition-opacity"
+            className="tap-target flex items-center gap-2.5 font-bold tracking-tight text-foreground hover:opacity-90 transition-opacity"
           >
             <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-zinc-100 dark:text-zinc-900 shadow-xs">
               <LayoutDashboard className="w-3.5 h-3.5" />
@@ -88,6 +89,7 @@ export function Header() {
           </div>
 
           <PrintReportButton />
+          <ThemeToggle />
         </div>
       </div>
     </header>

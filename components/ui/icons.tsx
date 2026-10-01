@@ -1,9 +1,13 @@
 import React from 'react';
 
+// Iconos decorativos: el enlace/botón que los contiene ya tiene nombre
+// accesible, así que se ocultan del árbol de accesibilidad en vez de declararse
+// `role="img"` sin texto alternativo (fallaba svg-img-alt).
 export function GithubIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      role="img"
+      aria-hidden="true"
+      focusable="false"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -22,7 +26,8 @@ export function GithubIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<S
 export function LinkedinIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
-      role="img"
+      aria-hidden="true"
+      focusable="false"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

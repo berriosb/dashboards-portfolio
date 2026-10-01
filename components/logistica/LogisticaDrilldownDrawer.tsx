@@ -8,9 +8,10 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { formatCLP, formatNumber } from '@/lib/format';
+import { formatCLP } from '@/lib/format';
 import { Search, Truck, ArrowUpDown, CheckCircle2, AlertCircle } from 'lucide-react';
 import { DespachoRecord } from '@/lib/logistica-data-engine';
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
 
 interface LogisticaDrilldownDrawerProps {
   isOpen: boolean;
@@ -54,6 +55,11 @@ export function LogisticaDrilldownDrawer({
       sortField === 'leadTime' ? b.horasLeadTime - a.horasLeadTime : b.costo - a.costo
     );
   }, [filteredRecords, selectedRuta, selectedTransportista, searchTerm, sortField]);
+
+  const maxLeadTime = useMemo(
+    () => Math.max(...displayRecords.map((r) => r.horasLeadTime), 1),
+    [displayRecords]
+  );
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -114,6 +120,23 @@ export function LogisticaDrilldownDrawer({
             >
               Costo
             </button>
+            <ExportCsvButton
+              data={displayRecords}
+              filename="trazabilidad_despachos_filtrados"
+              columns={[
+                { key: 'id', label: 'N° Guía' },
+                { key: 'ordenId', label: 'Orden ID' },
+                { key: 'cliente', label: 'Cliente' },
+                { key: 'ruta', label: 'Ruta' },
+                { key: 'transportista', label: 'Transportista' },
+                { key: 'horasLeadTime', label: 'Horas Lead Time' },
+                { key: 'otif', label: 'Cumple OTIF', format: (v) => (v ? 'Sí' : 'No') },
+                { key: 'incidencia', label: 'Incidencia' },
+                { key: 'costo', label: 'Costo CLP', format: (v) => formatCLP(Number(v)) },
+              ]}
+              label="CSV"
+              className="h-7 text-xs ml-1"
+            />
           </div>
         </div>
 
@@ -142,8 +165,12 @@ export function LogisticaDrilldownDrawer({
                     <div className="font-medium text-foreground">{d.ruta}</div>
                     <div className="text-[10px] text-muted-foreground">{d.transportista}</div>
                   </td>
-                  <td className="py-2 px-3 text-right tabular-nums font-semibold">
-                    {d.horasLeadTime}h
+                  <td className="py-2 px-3 text-right tabular-nums font-semibold relative">
+                    <div
+                      className="absolute inset-y-1 right-1 bg-amber-500/10 dark:bg-amber-400/15 rounded-sm pointer-events-none transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.max(0, (d.horasLeadTime / maxLeadTime) * 100))}%` }}
+                    />
+                    <span className="relative z-10">{d.horasLeadTime}h</span>
                   </td>
                   <td className="py-2 px-3 text-center">
                     {d.otif ? (

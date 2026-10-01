@@ -7,6 +7,7 @@ import {
   filterAndAggregateLogistica,
   LogisticaFilterState,
 } from '@/lib/logistica-data-engine';
+import { resolveBenchmark, LOGISTICA_METRICS } from '@/lib/metric-definitions';
 import { InsightBanner } from '@/components/insights/InsightBanner';
 import { LogisticaFilterBar } from './LogisticaFilterBar';
 import { KpiCard } from '@/components/charts/KpiCard';
@@ -17,6 +18,7 @@ import { FailureReasonsCard } from './FailureReasonsCard';
 import { LogisticaDrilldownDrawer } from './LogisticaDrilldownDrawer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ShareViewButton } from '@/components/ui/ShareViewButton';
+import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
 import { Truck, FileText } from 'lucide-react';
 
 interface LogisticaDashboardProps {
@@ -25,7 +27,7 @@ interface LogisticaDashboardProps {
 
 export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
   const [query, setQuery] = useQueryStates({
-    fechaInicio: parseAsString.withDefault('2025-10-01'),
+    fechaInicio: parseAsString.withDefault('2026-04-01'),
     fechaFin: parseAsString.withDefault('2026-09-30'),
     ruta: parseAsString,
     transportista: parseAsString,
@@ -55,9 +57,12 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
     return filterAndAggregateLogistica(dataset, filterState);
   }, [dataset, filterState]);
 
+  // Benchmarks desde la fuente canónica, prorateados a la ventana visible.
+  const meta = (key: string) => resolveBenchmark(key, aggregated.window.fraction, LOGISTICA_METRICS);
+
   const handleResetFilters = () => {
     setQuery({
-      fechaInicio: '2025-10-01',
+      fechaInicio: '2026-04-01',
       fechaFin: '2026-09-30',
       ruta: null,
       transportista: null,
@@ -89,11 +94,12 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto lg:justify-end">
+          <RepoLinkBadge repoName="logistica-chile-datos" />
           <button
             type="button"
             onClick={() => setIsDrilldownOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 text-xs font-medium min-h-11 px-3 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-all shadow-xs"
           >
             <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             Explorar Guías y Despachos
@@ -127,6 +133,7 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
         }}
         filteredCount={aggregated.filteredCount}
         totalCount={aggregated.totalCount}
+        filteredRecords={aggregated.filteredRecords}
         onRutaChange={(ruta) => setQuery({ ruta })}
         onTransportistaChange={(transportista) => setQuery({ transportista })}
         onTipoCargaChange={(tipoCarga) => setQuery({ tipoCarga })}
@@ -138,71 +145,82 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
         onResetFilters={handleResetFilters}
       />
 
-      {/* Grilla de KPIs Principales */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
-        <KpiCard
-          label="Cumplimiento OTIF"
-          value={aggregated.kpis.otifPct}
-          previousValue={92.4}
-          unit="%"
-          metricKey="otifPct"
-          benchmark={95.0}
-          benchmarkSource="Estándar EDI Chile"
-          highlightVariant="logistica"
-        />
-        <KpiCard
-          label="Lead Time P50"
-          value={aggregated.kpis.leadTimeP50}
-          previousValue={17.5}
-          unit="hrs"
-          metricKey="leadTimeP50"
-          benchmark={18.0}
-          benchmarkSource="SLA compromiso estándar"
-          highlightVariant="logistica"
-          trendDirection="lower-is-better"
-        />
-        <KpiCard
-          label="Lead Time P90"
-          value={aggregated.kpis.leadTimeP90}
-          previousValue={38.0}
-          unit="hrs"
-          metricKey="leadTimeP90"
-          benchmark={36.0}
-          benchmarkSource="Límite superior SLA"
-          highlightVariant="logistica"
-          trendDirection="lower-is-better"
-        />
-        <KpiCard
-          label="Fill Rate Volumen"
-          value={aggregated.kpis.fillRatePct}
-          previousValue={97.8}
-          unit="%"
-          metricKey="fillRatePct"
-          benchmark={98.0}
-          benchmarkSource="Exactitud de picking"
-          highlightVariant="logistica"
-        />
-        <KpiCard
-          label="Costo Promedio"
-          value={aggregated.kpis.costoPromedio}
-          previousValue={46500}
-          unit="CLP"
-          metricKey="costoPorDespacho"
-          benchmark={45000}
-          benchmarkSource="Presupuesto por flete"
-          highlightVariant="logistica"
-          trendDirection="lower-is-better"
-        />
-        <KpiCard
-          label="Concentración HHI"
-          value={aggregated.kpis.hhiProveedores}
-          unit="pts"
-          metricKey="hhiProveedores"
-          benchmark={1800}
-          benchmarkSource="Umbral DOJ/FTC"
-          highlightVariant="logistica"
-        />
-        <div className="col-span-2 sm:col-span-1">
+      {/* KPIs Ejecutivos con Arquitectura de 2 Niveles */}
+      <div className="space-y-3.5">
+        {/* Tier 1: North Star Metrics (3 Hero Cards con Sparklines y Progreso de Meta) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+          <KpiCard
+            isHero
+            label="Cumplimiento OTIF"
+            value={aggregated.kpis.otifPct}
+            previousValue={aggregated.previousKpis?.otifPct ?? null}
+            unit="%"
+            metricKey="otifPct"
+            benchmark={meta('otifPct')?.value ?? null}
+            benchmarkSource={meta('otifPct')?.source}
+            highlightVariant="logistica"
+            sparklineData={aggregated.tendenciaMensualOtif.map((m) => m.otifPct)}
+          />
+          <KpiCard
+            isHero
+            label="Lead Time P90"
+            value={aggregated.kpis.leadTimeP90}
+            previousValue={aggregated.previousKpis?.leadTimeP90 ?? null}
+            unit="hrs"
+            metricKey="leadTimeP90"
+            benchmark={meta('leadTimeP90')?.value ?? null}
+            benchmarkSource={meta('leadTimeP90')?.source}
+            highlightVariant="logistica"
+            trendDirection="lower-is-better"
+            sparklineData={aggregated.distribucionLeadTime.map((d) => d.porcentaje)}
+          />
+          <KpiCard
+            isHero
+            label="Costo Promedio Flete"
+            value={aggregated.kpis.costoPromedio}
+            previousValue={aggregated.previousKpis?.costoPromedio ?? null}
+            unit="CLP"
+            metricKey="costoPromedio"
+            benchmark={meta('costoPromedio')?.value ?? null}
+            benchmarkSource={meta('costoPromedio')?.source}
+            highlightVariant="logistica"
+            trendDirection="lower-is-better"
+            sparklineData={aggregated.otifPorRuta.map((r) => r.costoPromedio)}
+          />
+        </div>
+
+        {/* Tier 2: Operational Health Strip (4 Métricas Secundarias en Grid Balanceado) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-3.5">
+          <KpiCard
+            label="Lead Time P50"
+            value={aggregated.kpis.leadTimeP50}
+            previousValue={aggregated.previousKpis?.leadTimeP50 ?? null}
+            unit="hrs"
+            metricKey="leadTimeP50"
+            benchmark={meta('leadTimeP50')?.value ?? null}
+            benchmarkSource={meta('leadTimeP50')?.source}
+            highlightVariant="logistica"
+            trendDirection="lower-is-better"
+          />
+          <KpiCard
+            label="Fill Rate Volumen"
+            value={aggregated.kpis.fillRatePct}
+            previousValue={aggregated.previousKpis?.fillRatePct ?? null}
+            unit="%"
+            metricKey="fillRatePct"
+            benchmark={meta('fillRatePct')?.value ?? null}
+            benchmarkSource={meta('fillRatePct')?.source}
+            highlightVariant="logistica"
+          />
+          <KpiCard
+            label="Concentración HHI"
+            value={aggregated.kpis.hhiProveedores}
+            unit="pts"
+            metricKey="hhiProveedores"
+            benchmark={meta('hhiProveedores')?.value ?? null}
+            benchmarkSource={meta('hhiProveedores')?.source}
+            highlightVariant="logistica"
+          />
           <KpiCard
             label="Total Despachos"
             value={aggregated.kpis.totalDespachos}

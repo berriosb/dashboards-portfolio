@@ -14,7 +14,10 @@ interface DataTableProps<T> {
   maxHeight?: string;
 }
 
-export function DataTable<T extends Record<string, any>>({
+// `object` en vez de `Record<string, any>`: la fila se indexa con
+// `row[col.key as keyof T]`, que ya está bien tipado, así que la restricción
+// solo necesita decir "es un objeto" y no abrir la puerta a `any`.
+export function DataTable<T extends object>({
   data,
   columns,
   caption,

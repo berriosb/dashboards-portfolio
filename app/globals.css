@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* El tema de la app se controla con la clase `.dark` sobre <html> (script inline
+   en app/layout.tsx + ThemeToggle), NO con la preferencia del sistema. Sin esta
+   línea Tailwind resuelve `dark:` contra `@media (prefers-color-scheme: dark)`,
+   así que con el SO en dark y la app en "claro" se pintan variantes dark sobre
+   superficies claras y el texto queda ilegible (contraste ~1.2:1). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -89,6 +96,34 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Recharts pinta el texto de la leyenda con su gris por defecto (#8c8c8c),
+   que en fondo claro queda en ~3.2:1. Se fuerza al foreground del tema; la
+   asociación con la serie sigue por el punto de color del icono. */
+.recharts-legend-item-text {
+  fill: hsl(var(--foreground)) !important;
+}
+
+/* Áreas táctiles de 44x44 (AGENTS.md §baseline-ui) para controles iconográficos
+   que dentro de una KPI densa o de un eje de heatmap se verían desproporcionados
+   con 44px reales. El ::after no altera el layout: solo extiende el área
+   sensible y por eso recibe el clic/tap. Solo en puntero grueso, para no dejar
+   padding invisible en desktop. */
+@media (pointer: coarse) {
+  .tap-target {
+    position: relative;
+  }
+
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: 44px;
+    height: 44px;
+  }
 }
 
 @media print {
