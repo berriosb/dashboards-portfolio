@@ -67,7 +67,7 @@ export function OtifRoutesBarCard({
           <BarChart
             layout="vertical"
             data={data}
-            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+            margin={{ top: 5, right: 46, left: 10, bottom: 5 }}
           >
             <XAxis
               type="number"
@@ -85,13 +85,66 @@ export function OtifRoutesBarCard({
               axisLine={false}
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             />
+            {/* Tick en dos líneas: nombre de la ruta arriba, su OTIF% debajo.
+
+                El color por sí solo NO puede ser el portador del estado
+                (WCAG 1.4.1 y AGENTS §3 `pair-status-with-labels`): con barras
+                rosadas/ámbar/verdes sin cifra al lado, "cumple" y "no cumple"
+                sólo se distinguen para quien distingue esos tres tonos. Con el
+                valor escrito, el estado se lee con o sin percepción del color.
+
+                Se dibuja con un `tick` custom en vez de `<LabelList>` o el prop
+                `label` del `Bar` porque en Recharts 3.10 ninguna de esas dos
+                APIs produjo capa de etiquetas en el DOM —se verificó: 0 nodos
+                `.recharts-label` además del "Meta 95%" de la ReferenceLine— y
+                el chart quedaba exactamente igual que antes del fix. Un tick
+                custom sí se renderiza siempre. */}
             <YAxis
               type="category"
               dataKey="ruta"
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
-              width={120}
+              width={128}
+              interval={0}
+              tick={({ x, y, payload }) => {
+                const item = data.find((d) => d.ruta === payload.value);
+                const otif = item?.otifPct ?? 0;
+                const critico = otif < 90;
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      textAnchor="end"
+                      dy={-1}
+                      fontSize={9.5}
+                      fill="hsl(var(--foreground))"
+                    >
+                      {payload.value}
+                    </text>
+                    <text
+                      textAnchor="end"
+                      dy={11}
+                      fontSize={10.5}
+                      fontWeight={700}
+                      className="tabular-nums"
+                      /* `style` y no el atributo `fill`: una custom property NO
+                         resuelve dentro de un atributo de presentación SVG —
+                         se verificó que `fill="hsl(var(--status-critical))"`
+                         computaba a rgb(0,0,0), o sea texto negro invisible en
+                         dark. En `style` el var() sí se resuelve. */
+                      style={{
+                        fill:
+                          critico
+                            ? 'hsl(var(--status-critical))'
+                            : otif >= 95
+                              ? 'hsl(var(--status-good))'
+                              : 'hsl(var(--status-warn))',
+                      }}
+                    >
+                      {formatPercent(otif)}
+                    </text>
+                  </g>
+                );
+              }}
             />
             <Tooltip
               content={({ active, payload }) => {

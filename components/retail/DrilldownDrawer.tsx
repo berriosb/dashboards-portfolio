@@ -284,7 +284,7 @@ export function DrilldownDrawer({
                   <th className="py-2.5 px-3 font-semibold">Cliente</th>
                   <th className="py-2.5 px-3 font-semibold">Segmento</th>
                   <th className="py-2.5 px-3 font-semibold text-right">Pedidos</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Última C.</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Última compra</th>
                   <th className="py-2.5 px-3 font-semibold text-right">Gasto Acum.</th>
                 </tr>
               </thead>

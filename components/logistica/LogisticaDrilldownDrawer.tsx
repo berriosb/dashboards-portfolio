@@ -290,7 +290,7 @@ export function LogisticaDrilldownDrawer({
             <strong className="text-foreground tabular-nums">
               {formatNumber(displayRecords.length)}
             </strong>{' '}
-            despachos en la lista · scrolls para recorrerlos todos
+            despachos en la lista · desplázate verticalmente para verlos todos
           </span>
           <span className="italic">Datos operativos reproducibles (Seed Mulberry32)</span>
         </div>

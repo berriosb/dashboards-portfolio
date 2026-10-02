@@ -4,6 +4,7 @@ import React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { Info } from 'lucide-react';
 import { ALL_METRICS } from '@/lib/metric-definitions';
+import { formatCLP, formatNumber } from '@/lib/format';
 
 interface GlossaryTooltipProps {
   metricKey: string;
@@ -54,7 +55,16 @@ export function GlossaryTooltip({
             <div className="border-t border-border pt-2 space-y-1">
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">{benchmarkLabel ?? 'Benchmark'}: </span>
-                {metric.unit === 'CLP' ? `$${shownBenchmark.toLocaleString('es-CL')}` : `${shownBenchmark}${metric.unit}`}
+                {/* `formatCLP`/`formatNumber` en vez de `toLocaleString` a mano:
+                    el separador de miles y el prefijo quedan en un solo lugar.
+                    `tabular-nums` porque el benchmark cambia al cambiar el
+                    filtro y no debe desplazar el texto que lo rodea. */}
+                <span className="tabular-nums font-medium text-foreground">
+                  {metric.unit === 'CLP'
+                    ? formatCLP(shownBenchmark)
+                    : formatNumber(shownBenchmark)}
+                  {metric.unit === 'CLP' ? '' : metric.unit}
+                </span>
               </p>
               <p className="text-[11px] text-muted-foreground italic">{shownSource}</p>
             </div>

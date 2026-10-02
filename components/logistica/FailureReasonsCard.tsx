@@ -43,9 +43,9 @@ export function FailureReasonsCard({ data }: FailureReasonsCardProps) {
 
   return (
     <ChartFrame
-      title="Pareto de Causas de No Cumplimiento"
+      title="Causas de No Cumplimiento OTIF"
       description="Factores que provocaron quiebres en entregas a tiempo o completas"
-      ariaLabel="Gráfico de Pareto de causas de incidencias de despacho"
+      ariaLabel="Gráfico de barras de causas de no cumplimiento OTIF por tipo de incidencia"
       tableComponent={<DataTable data={data} columns={tableColumns} caption="Desglose de incidencias" />}
     >
       <div className="h-[280px] w-full min-w-0 pt-1">

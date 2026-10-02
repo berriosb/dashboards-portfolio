@@ -199,17 +199,27 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Previews de Métricas */}
-                    <div className="grid grid-cols-3 gap-2 py-3 border-y border-border/70 text-center">
+                    {/* Previews de Métricas.
+                        2 columnas en móvil en vez de 3: con tres, cada celda
+                        queda ~95px a 375px y las notas de banda de referencia
+                        salían truncadas e ilegibles a 9px. En 2 columnas el
+                        texto tiene ancho para leerse sin `truncate`. */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 py-3 border-y border-border/70 text-center">
                       {dash.metrics.map((m) => (
-                        <div key={m.label} className="space-y-0.5">
-                          <div className="text-[10px] text-muted-foreground truncate" title={m.label}>
+                        <div key={m.label} className="space-y-0.5 min-w-0">
+                          <div
+                            className="text-[11px] text-muted-foreground leading-tight text-balance"
+                            title={m.label}
+                          >
                             {m.label}
                           </div>
                           <div className="text-sm font-bold text-foreground tabular-nums">
                             {m.value}
                           </div>
-                          <div className="text-[9px] text-muted-foreground truncate">
+                          <div
+                            className="text-[11px] text-muted-foreground leading-tight text-balance"
+                            title={m.note}
+                          >
                             {m.note}
                           </div>
                         </div>

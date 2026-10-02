@@ -65,6 +65,24 @@
     --banca-accent-subtle: #ecfdf5;
     --logistica-accent: #d97706;
     --logistica-accent-subtle: #fffbeb;
+
+    /* Estados de cumplimiento, para texto pequeño (10-11px) sobre superficie
+       de card. Se guardan como TRÍO DE CANALES, no como color completo, para
+       poder envolverlos en `hsl(var(--token))` igual que el resto del archivo:
+       si se guardaran como `hsl(350 70% 41%)`, el consumidor
+       `hsl(var(--status-critical))` se resolvería a `hsl(<hex>)`, que es
+       inválido y deja el texto computando a negro (rgb(0,0,0)).
+       Verificados por cálculo sobre blanco:
+         - critical (rosa)      6.68:1 → AA
+         - good     (esmeralda) 6.06:1 → AA
+         - warn     (ámbar)     6.05:1 → AA
+       Los tonos que se usaban antes en el heatmap OTIF (esmeralda 32% y ámbar
+       44% de luminosidad) daban 3.76:1 y 3.15:1: el número se leía como texto
+       normal, no como "texto grande", así que no aplicaba la excepción de 3:1
+       y ambos violaban AA. */
+    --status-critical: 350 70% 41%;
+    --status-good: 160 84% 24%;
+    --status-warn: 32 95% 30%;
   }
 
   .dark {
@@ -95,6 +113,14 @@
     --banca-accent-subtle: #064e3b;
     --logistica-accent: #f59e0b;
     --logistica-accent-subtle: #78350f;
+
+    /* Estados de cumplimiento en dark, también como trío de canales. Se
+       aclaran porque la card es casi negra (luminancia ~0.0006) y los tonos
+       oscuros no se separarían de ella.
+       Contraste sobre esa superficie: 9.74:1 / 12.22:1 / 9.21:1 → AA. */
+    --status-critical: 350 90% 78%;
+    --status-good: 158 64% 62%;
+    --status-warn: 38 92% 66%;
   }
 }
 

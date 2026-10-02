@@ -50,7 +50,13 @@ export function LeadTimeDistributionCard({
   return (
     <ChartFrame
       title="Distribución de Lead Time (Tiempos de Ciclo)"
-      description={`Mediana P50: ${p50} hrs · Límite Superior SLA P90: ${p90} hrs`}
+      description={
+        <>
+          Mediana P50: <span className="tabular-nums font-medium text-foreground">{formatNumber(p50)} hrs</span>
+          {' · '}Límite Superior SLA P90:{' '}
+          <span className="tabular-nums font-medium text-foreground">{formatNumber(p90)} hrs</span>
+        </>
+      }
       ariaLabel="Histograma de tiempos de ciclo de despachos logísticos"
       tableComponent={<DataTable data={data} columns={tableColumns} caption="Desglose de lead times" />}
     >

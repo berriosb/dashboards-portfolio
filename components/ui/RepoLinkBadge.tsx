@@ -40,7 +40,7 @@ export function RepoLinkBadge({
         href={targetUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/80 bg-card/80 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className="group inline-flex items-center gap-1.5 min-h-11 tap-target px-3 rounded-full border border-border/80 bg-card/80 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         title={`Generadores con seed fijo y validador de invariantes en github.com/${repoFullName}`}
       >
         <GithubIcon className="w-3.5 h-3.5 text-foreground transition-transform group-hover:scale-110" />

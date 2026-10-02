@@ -324,7 +324,7 @@ export function BancaDrilldownDrawer({
             <strong className="text-foreground tabular-nums">
               {formatNumber(displayRecords.length)}
             </strong>{' '}
-            operaciones en la lista · scrolls para recorrerlas todas
+            operaciones en la lista · desplázate verticalmente para verlas todas
           </span>
           <span className="italic text-right">Normativa CMF / IFRS 9 (Simulación determinista)</span>
         </div>

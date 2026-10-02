@@ -5,7 +5,14 @@ import { Table, BarChart2 } from 'lucide-react';
 
 interface ChartFrameProps {
   title: string;
-  description?: string;
+  /**
+   * `ReactNode` y no `string`: las descripciones que interpolan cifras
+   * cambiantes (p. ej. "Mediana P50: 42 hrs") necesitan envolver el número en
+   * un `<span className="tabular-nums">` para cumplir la regla de AGENTS §3 de
+   * que ninguna cifra "baila" al cambiar de valor. Con `string` eso era
+   * imposible y las cifras inevitably salían sin el tratamiento.
+   */
+  description?: React.ReactNode;
   badge?: string;
   children: React.ReactNode;
   tableComponent?: React.ReactNode;

@@ -148,7 +148,7 @@ export function Header() {
 
           {/* Status SLA Institucional sin animación agresiva */}
           <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border/60 text-[11px] font-medium text-foreground">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
             <span className="tabular-nums font-mono font-semibold">0ms</span>
             <span className="text-muted-foreground font-normal">Motor In-Memory</span>
           </div>

@@ -19,7 +19,12 @@ export function Footer() {
         {/* Gobernanza y Versionado */}
         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-[11px] text-muted-foreground shrink-0">
           <span className="inline-flex items-center gap-1.5 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {/* Decorativo: el significado ("motor operativo") ya lo carga el
+                texto contiguo, así que el punto no necesita ser anunciado ni
+                depender del color para entenderse (WCAG 1.4.1). Se mantiene el
+                verde de estado del sistema, que es el mismo que usa el badge
+                del header; no es el acento de negocio del dashboard. */}
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
             0ms In-Memory Client Engine
           </span>
           {/* Separador decorativo: se oculta a lectores de pantalla porque es
