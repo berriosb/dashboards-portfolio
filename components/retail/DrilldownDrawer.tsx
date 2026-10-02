@@ -156,10 +156,11 @@ export function DrilldownDrawer({
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
             <input
               type="text"
+              aria-label={type === 'skus' ? 'Buscar por producto o SKU' : 'Buscar por cliente o correo'}
               placeholder={type === 'skus' ? 'Buscar producto o SKU...' : 'Buscar cliente o correo...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground"
             />
           </div>
 
@@ -227,7 +228,12 @@ export function DrilldownDrawer({
         </div>
 
         {/* Tabla de Resultados */}
-        <div className="flex-1 overflow-y-auto border border-border rounded-xl">
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Detalle filtrado, desplazable"
+          className="flex-1 overflow-y-auto border border-border rounded-xl focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
           {type === 'skus' ? (
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-muted/50 sticky top-0 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">

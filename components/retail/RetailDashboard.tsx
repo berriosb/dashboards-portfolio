@@ -10,7 +10,7 @@ import {
 import { InsightBanner } from '@/components/insights/InsightBanner';
 import { FilterBar } from '@/components/filters/FilterBar';
 import { resolveBenchmark, RETAIL_METRICS } from '@/lib/metric-definitions';
-import { formatCLP } from '@/lib/format';
+import { formatCLP, formatDate } from '@/lib/format';
 import { KpiCard } from '@/components/charts/KpiCard';
 import { LineChartCard } from '@/components/charts/LineChartCard';
 import { BarChartCard } from '@/components/charts/BarChartCard';
@@ -109,7 +109,7 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
               {dataset.meta.empresa}
             </span>
             <span className="text-xs text-muted-foreground font-mono">
-              Período: {dataset.meta.periodoInicio} al {dataset.meta.periodoFin}
+              Período: {formatDate(dataset.meta.periodoInicio)} – {formatDate(dataset.meta.periodoFin)}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
@@ -307,7 +307,7 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
           </div>
 
           {/* Fila 3: Matriz RFM 5x5 Nativa (CSS Grid + Radix Tooltips) */}
-          <div className="bg-card rounded-xl border border-border p-4 md:p-6 shadow-xs space-y-4">
+          <div className="bg-card rounded-xl border border-border p-4 md:p-5 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
               <div className="space-y-0.5">
                 <h2 className="text-base md:text-lg font-bold text-foreground flex items-center gap-2">

@@ -1,4 +1,10 @@
 @import "tailwindcss";
+/* `animate-in` / `fade-in-0` / `zoom-in-95` / `slide-in-from-*` NO vienen en el
+   core de Tailwind 4: son utilidades de tw-animate-css. Sin este import los
+   Sheet, los Dropdown de FilterSelect y los tooltips de Radix llevaban clases
+   de animación que no generaban ninguna regla CSS, es decir aparecían de
+   golpe y las clases eran código muerto. */
+@import "tw-animate-css";
 
 /* El tema de la app se controla con la clase `.dark` sobre <html> (script inline
    en app/layout.tsx + ThemeToggle), NO con la preferencia del sistema. Sin esta
@@ -96,6 +102,41 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Anillo de foco visible GLOBAL.
+   El problema no era que faltara en 12 componentes: era que cada archivo
+   declaraba su propio `focus-visible:ring`, y 12 de los 18 archivos con
+   `<button>` no declaraban ninguno, así que el foco era invisible en la mitad
+   de la app. Un anillo en la capa base cubre todo el producto y no depende de
+   que cada archivo se acuerde. Los componentes que ya traen
+   `focus-visible:outline-none focus-visible:ring-ring` conservan su anillo
+   propio: `outline-none` gana por especificidad y no se duplica nada. */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Movimiento reducido.
+
+   Se anulan duraciones e iteraciones, no el cambio de estado: una animación de
+   0.01ms igual aterriza en su estado final, así que el panel sigue apareciendo
+   y el usuario sigue viendo que se abrió — lo que desaparece es el
+   desplazamiento, que es justo lo que incomoda.
+
+   Por eso acá NO se toca `visibility` ni `display`: si se mataran, el Sheet
+   aparecería y desaparecería sin señal perceptible y el feedback se perdería.
+   El `animate-pulse` del punto de estado queda estático, que es lo correcto:
+   es un loop infinito sin información que entregar. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Recharts pinta el texto de la leyenda con su gris por defecto (#8c8c8c),

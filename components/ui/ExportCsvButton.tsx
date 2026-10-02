@@ -116,6 +116,11 @@ export function ExportCsvButton<T extends object>({
           <span className="hidden sm:inline">{label}</span>
         </>
       )}
+      {/* Región viva persistente (mismo criterio que ShareViewButton): se
+          anuncia el cambio de contenido, no el montaje del nodo. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {downloaded ? `Archivo ${filename}.csv descargado` : ''}
+      </span>
     </button>
   );
 }

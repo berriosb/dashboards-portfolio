@@ -8,6 +8,7 @@ import {
   LogisticaFilterState,
 } from '@/lib/logistica-data-engine';
 import { resolveBenchmark, LOGISTICA_METRICS } from '@/lib/metric-definitions';
+import { formatDate } from '@/lib/format';
 import { InsightBanner } from '@/components/insights/InsightBanner';
 import { LogisticaFilterBar } from './LogisticaFilterBar';
 import { KpiCard } from '@/components/charts/KpiCard';
@@ -83,7 +84,7 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
               {dataset.meta.empresa}
             </span>
             <span className="text-xs text-muted-foreground font-mono">
-              Período Operativo: {dataset.meta.periodoInicio} al {dataset.meta.periodoFin}
+              Período Operativo: {formatDate(dataset.meta.periodoInicio)} – {formatDate(dataset.meta.periodoFin)}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">

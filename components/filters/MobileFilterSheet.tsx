@@ -115,11 +115,15 @@ export function MobileFilterSheet({
         <div className="space-y-5 py-4">
           {/* Período de tiempo */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               Período de Análisis
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            </span>
+            <div
+              role="group"
+              aria-label="Elegir período de análisis"
+              className="grid grid-cols-2 gap-1.5"
+            >
               {DATE_PRESETS.map((preset) => {
                 const isActive =
                   selectedDateRange.start === preset.start &&
@@ -129,6 +133,7 @@ export function MobileFilterSheet({
                     key={preset.label}
                     type="button"
                     onClick={() => onDateRangeChange({ start: preset.start, end: preset.end })}
+                    aria-pressed={isActive}
                     className={`text-xs px-2.5 py-2 rounded-lg border text-left transition-all ${
                       isActive
                         ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-500'
@@ -148,14 +153,19 @@ export function MobileFilterSheet({
 
           {/* Categoría */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               Categoría de Producto
-            </label>
-            <div className="flex flex-wrap gap-1.5">
+            </span>
+            <div
+              role="group"
+              aria-label="Filtrar por categoría de producto"
+              className="flex flex-wrap gap-1.5"
+            >
               <button
                 type="button"
                 onClick={() => onCategoryChange(null)}
+                aria-pressed={selectedCategory === null}
                 className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
                   selectedCategory === null
                     ? 'border-blue-600 bg-blue-600 text-white font-medium'
@@ -171,6 +181,7 @@ export function MobileFilterSheet({
                     key={cat}
                     type="button"
                     onClick={() => onCategoryChange(isSelected ? null : cat)}
+                    aria-pressed={isSelected}
                     className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
                       isSelected
                         ? 'border-blue-600 bg-blue-600 text-white font-medium'
@@ -186,14 +197,19 @@ export function MobileFilterSheet({
 
           {/* Canal de Venta */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <ShoppingBag className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               Canal de Venta
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+            </span>
+            <div
+              role="group"
+              aria-label="Filtrar por canal de venta"
+              className="grid grid-cols-3 gap-2"
+            >
               <button
                 type="button"
                 onClick={() => onChannelChange(null)}
+                aria-pressed={selectedChannel === null}
                 className={`text-xs py-2 rounded-lg border text-center transition-all ${
                   selectedChannel === null
                     ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-500'
@@ -209,6 +225,7 @@ export function MobileFilterSheet({
                     key={ch}
                     type="button"
                     onClick={() => onChannelChange(isSelected ? null : ch)}
+                    aria-pressed={isSelected}
                     className={`text-xs py-2 rounded-lg border text-center capitalize transition-all ${
                       isSelected
                         ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-500'
@@ -224,14 +241,18 @@ export function MobileFilterSheet({
 
           {/* Región */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <label
+              htmlFor="mfs-region"
+              className="text-xs font-semibold text-foreground flex items-center gap-1.5"
+            >
               <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               Región Geográfica
             </label>
             <select
+              id="mfs-region"
               value={selectedRegion || ''}
               onChange={(e) => onRegionChange(e.target.value ? e.target.value : null)}
-              className="w-full text-xs h-10 px-3 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-xs min-h-11 px-3 rounded-lg border border-border bg-card text-foreground"
             >
               <option value="">Todas las regiones</option>
               {regions.map((reg) => (

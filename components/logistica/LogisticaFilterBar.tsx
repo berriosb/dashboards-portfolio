@@ -184,10 +184,11 @@ export function LogisticaFilterBar({
             />
           </div>
 
-          {/* Botón Solo Incidencias */}
+          {/* Botón Solo Incidencias: toggle, así que expone su estado */}
           <button
             type="button"
             onClick={() => onSoloIncidenciasChange(!soloIncidencias)}
+            aria-pressed={soloIncidencias}
             className={`hidden lg:inline-flex items-center gap-1.5 text-xs h-8.5 px-2.5 rounded-lg border transition-all ${
               soloIncidencias
                 ? 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-900 font-semibold shadow-xs'
@@ -203,6 +204,9 @@ export function LogisticaFilterBar({
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
             className="md:hidden inline-flex items-center gap-1.5 text-xs min-h-11 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted"
+            aria-label="Abrir panel de filtros avanzados"
+            aria-expanded={isMobileSheetOpen}
+            aria-haspopup="dialog"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Filtros</span>
@@ -212,10 +216,23 @@ export function LogisticaFilterBar({
 
         {/* Lado derecho: Contador, Exportación CSV y Reset */}
         <div className="flex items-center gap-2 ml-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400" />
-            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
-            <span className="text-muted-foreground">/ {formatNumber(totalCount)}</span>
+          {/* `role="status"` para que el resultado del filtrado se anuncie */}
+          <div
+            role="status"
+            aria-live="polite"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400" aria-hidden="true" />
+            <span className="font-semibold text-foreground" aria-hidden="true">
+              {formatNumber(filteredCount)}
+            </span>
+            <span className="text-muted-foreground" aria-hidden="true">
+              / {formatNumber(totalCount)}
+            </span>
+            <span className="sr-only">
+              {formatNumber(filteredCount)} de {formatNumber(totalCount)} despachos coinciden
+              con los filtros aplicados.
+            </span>
           </div>
 
           {/* Exportación CSV instantánea */}
@@ -261,7 +278,12 @@ export function LogisticaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
               <Route className="w-3 h-3" />
               <span>Ruta: <strong>{selectedRuta}</strong></span>
-              <button type="button" onClick={() => onRutaChange(null)}>
+              <button
+                type="button"
+                onClick={() => onRutaChange(null)}
+                aria-label={`Eliminar filtro de ruta ${selectedRuta}`}
+                className="hover:text-amber-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -271,7 +293,12 @@ export function LogisticaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
               <Truck className="w-3 h-3" />
               <span>Flota: <strong>{selectedTransportista}</strong></span>
-              <button type="button" onClick={() => onTransportistaChange(null)}>
+              <button
+                type="button"
+                onClick={() => onTransportistaChange(null)}
+                aria-label={`Eliminar filtro de transportista ${selectedTransportista}`}
+                className="hover:text-amber-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -281,7 +308,12 @@ export function LogisticaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
               <Package className="w-3 h-3" />
               <span>Carga: <strong>{selectedTipoCarga}</strong></span>
-              <button type="button" onClick={() => onTipoCargaChange(null)}>
+              <button
+                type="button"
+                onClick={() => onTipoCargaChange(null)}
+                aria-label={`Eliminar filtro de tipo de carga ${selectedTipoCarga}`}
+                className="hover:text-amber-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -291,7 +323,12 @@ export function LogisticaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-200 text-xs">
               <Clock className="w-3 h-3" />
               <span>Prioridad: <strong>{selectedPrioridad}</strong></span>
-              <button type="button" onClick={() => onPrioridadChange(null)}>
+              <button
+                type="button"
+                onClick={() => onPrioridadChange(null)}
+                aria-label={`Eliminar filtro de prioridad ${selectedPrioridad}`}
+                className="hover:text-amber-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -300,8 +337,13 @@ export function LogisticaFilterBar({
           {soloIncidencias && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs font-semibold">
               <AlertTriangle className="w-3 h-3" />
-              <span>Solo no cumplidos</span>
-              <button type="button" onClick={() => onSoloIncidenciasChange(false)}>
+              <span>Solo fallas</span>
+              <button
+                type="button"
+                onClick={() => onSoloIncidenciasChange(false)}
+                aria-label="Quitar el filtro de solo fallas"
+                className="hover:text-rose-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -319,12 +361,20 @@ export function LogisticaFilterBar({
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 py-4 text-xs">
+            {/* Cada control lleva `id` + `htmlFor`: antes el `<label>` era
+                hermano del `<select>`, sin asociación, así que los cuatro
+                selects se anunciaban como "cuadro combinado" sin nombre
+                (WCAG 1.3.1 / 4.1.2). `min-h-11` sube los 40px de `h-10` al
+                mínimo táctil de 44px. */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Ruta de Transporte</label>
+              <label htmlFor="lf-sheet-ruta" className="font-semibold text-foreground">
+                Ruta de Transporte
+              </label>
               <select
+                id="lf-sheet-ruta"
                 value={selectedRuta || ''}
                 onChange={(e) => onRutaChange(e.target.value || null)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-card"
+                className="w-full min-h-11 px-3 rounded-lg border border-border bg-card"
               >
                 <option value="">Todas las rutas</option>
                 {rutas.map((r) => (
@@ -336,11 +386,17 @@ export function LogisticaFilterBar({
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Empresa Transportista</label>
+              <label
+                htmlFor="lf-sheet-transportista"
+                className="font-semibold text-foreground"
+              >
+                Empresa Transportista
+              </label>
               <select
+                id="lf-sheet-transportista"
                 value={selectedTransportista || ''}
                 onChange={(e) => onTransportistaChange(e.target.value || null)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-card"
+                className="w-full min-h-11 px-3 rounded-lg border border-border bg-card"
               >
                 <option value="">Todos los transportistas</option>
                 {transportistas.map((t) => (
@@ -352,11 +408,14 @@ export function LogisticaFilterBar({
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Tipo de Carga</label>
+              <label htmlFor="lf-sheet-tipocarga" className="font-semibold text-foreground">
+                Tipo de Carga
+              </label>
               <select
+                id="lf-sheet-tipocarga"
                 value={selectedTipoCarga || ''}
                 onChange={(e) => onTipoCargaChange(e.target.value || null)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-card"
+                className="w-full min-h-11 px-3 rounded-lg border border-border bg-card"
               >
                 <option value="">Todos los tipos de carga</option>
                 {tiposCarga.map((t) => (
@@ -368,11 +427,14 @@ export function LogisticaFilterBar({
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Prioridad de Servicio</label>
+              <label htmlFor="lf-sheet-prioridad" className="font-semibold text-foreground">
+                Prioridad de Servicio
+              </label>
               <select
+                id="lf-sheet-prioridad"
                 value={selectedPrioridad || ''}
                 onChange={(e) => onPrioridadChange(e.target.value || null)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-card"
+                className="w-full min-h-11 px-3 rounded-lg border border-border bg-card"
               >
                 <option value="">Todas las prioridades</option>
                 {prioridades.map((p) => (
@@ -382,14 +444,60 @@ export function LogisticaFilterBar({
                 ))}
               </select>
             </div>
+
+            {/* El selector de rango del desktop (líneas 111-129) no existía en el
+                sheet: en un teléfono quien deep-linkeara una ventana o la
+                cambiara en desktop quedaba atrapado en ese período, sin forma
+                de volver al rango por defecto. */}
+            <div className="space-y-1.5">
+              <label htmlFor="lf-sheet-periodo" className="font-semibold text-foreground">
+                Período temporal
+              </label>
+              <select
+                id="lf-sheet-periodo"
+                value={
+                  DATE_PRESETS.find(
+                    (p) => p.start === selectedDateRange.start && p.end === selectedDateRange.end
+                  )?.label ?? ''
+                }
+                onChange={(e) => {
+                  const preset = DATE_PRESETS.find((p) => p.label === e.target.value);
+                  if (preset) onDateRangeChange({ start: preset.start, end: preset.end });
+                }}
+                className="w-full min-h-11 px-3 rounded-lg border border-border bg-card"
+              >
+                {/* Valor deep-linkeado que no calza con ningún preset: se
+                    muestra como primer option para no perder la ventana real. */}
+                {!currentPreset && (
+                  <option value="">
+                    {formatDate(selectedDateRange.start)} – {formatDate(selectedDateRange.end)}
+                  </option>
+                )}
+                {DATE_PRESETS.map((p) => (
+                  <option key={p.label} value={p.label}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <SheetFooter className="pt-2 border-t border-border flex flex-row gap-2">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className="inline-flex items-center justify-center gap-1.5 text-xs font-medium min-h-11 px-3 rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Limpiar
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsMobileSheetOpen(false)}
-              className="w-full text-xs py-2.5 rounded-lg bg-amber-600 text-white font-medium"
+              className="flex-1 text-xs min-h-11 py-2.5 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700"
             >
-              Aplicar filtros ({formatNumber(filteredCount)} despachos)
+              Ver {formatNumber(filteredCount)} despachos
             </button>
           </SheetFooter>
         </SheetContent>

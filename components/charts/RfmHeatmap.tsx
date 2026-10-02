@@ -78,7 +78,11 @@ export function RfmHeatmap({
   return (
     <div className="w-full flex flex-col space-y-3.5">
       {/* Selector de segmentos unificado con paleta azul coherente */}
-      <div className="flex items-center gap-1.5 flex-wrap text-xs">
+      <div
+        role="group"
+        aria-label="Filtrar por segmento RFM"
+        className="flex items-center gap-1.5 flex-wrap text-xs"
+      >
         <span className="text-muted-foreground font-medium mr-1 text-[11px]">Segmentos:</span>
         {['Champions', 'Loyal', 'Potential', 'At Risk', 'Hibernating'].map((seg) => {
           const isActive = selectedSegment === seg;
@@ -87,6 +91,7 @@ export function RfmHeatmap({
               key={seg}
               type="button"
               onClick={() => onSelectSegment?.(isActive ? null : seg)}
+              aria-pressed={isActive}
               className={`px-2.5 min-h-11 rounded-lg text-xs transition-all ${
                 isActive
                   ? 'bg-blue-600 text-white font-semibold shadow-xs'
@@ -133,6 +138,7 @@ export function RfmHeatmap({
                       <button
                         type="button"
                         onClick={() => onSelectSegment?.(isSelected ? null : cell.segment)}
+                        aria-pressed={isSelected}
                         className={`h-12 md:h-13 w-full rounded-lg border flex flex-col items-center justify-center p-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer ${getCellColor(
                           cell.customerCount,
                           isSelected

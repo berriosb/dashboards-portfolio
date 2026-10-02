@@ -8,6 +8,7 @@ import {
   BancaFilterState,
 } from '@/lib/banca-data-engine';
 import { resolveBenchmark, BANCA_METRICS } from '@/lib/metric-definitions';
+import { formatDate } from '@/lib/format';
 import { InsightBanner } from '@/components/insights/InsightBanner';
 import { BancaFilterBar } from './BancaFilterBar';
 import { KpiCard } from '@/components/charts/KpiCard';
@@ -82,7 +83,7 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
               {dataset.meta.empresa}
             </span>
             <span className="text-xs text-muted-foreground font-mono">
-              Período de Cartera: {dataset.meta.periodoInicio} al {dataset.meta.periodoFin}
+              Período de Cartera: {formatDate(dataset.meta.periodoInicio)} – {formatDate(dataset.meta.periodoFin)}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">

@@ -42,7 +42,7 @@ export function EmptyState({
         <button
           type="button"
           onClick={onResetFilters}
-          className={`inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl text-white transition-all shadow-xs ${accentBtn}`}
+          className={`inline-flex items-center gap-2 text-xs font-semibold min-h-11 px-4 rounded-xl text-white transition-all shadow-xs ${accentBtn}`}
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Restablecer todos los filtros</span>

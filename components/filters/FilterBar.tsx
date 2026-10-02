@@ -123,11 +123,19 @@ export function FilterBar({
           </div>
 
           {/* Selector de Canal (Segmented Control) */}
-          <div className="hidden md:inline-flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60 text-xs">
+          {/* `role="group"` + `aria-pressed` en cada opción: el estado activo se
+              leía sólo por color de fondo, así que un lector de pantalla no
+              tenía forma de saber qué canal estaba filtrando. */}
+          <div
+            role="group"
+            aria-label="Filtrar por canal de venta"
+            className="hidden md:inline-flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/60 text-xs"
+          >
             <button
               type="button"
               onClick={() => onChannelChange(null)}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+              aria-pressed={selectedChannel === null}
+              className={`px-2.5 py-1 rounded-md font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
                 selectedChannel === null
                   ? 'bg-background text-foreground shadow-2xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -140,7 +148,8 @@ export function FilterBar({
                 key={ch}
                 type="button"
                 onClick={() => onChannelChange(selectedChannel === ch ? null : ch)}
-                className={`px-2.5 py-1 rounded-md capitalize font-medium transition-all ${
+                aria-pressed={selectedChannel === ch}
+                className={`px-2.5 py-1 rounded-md capitalize font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
                   selectedChannel === ch
                     ? 'bg-blue-600 text-white shadow-xs font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
@@ -169,8 +178,10 @@ export function FilterBar({
           <button
             type="button"
             onClick={() => setIsMobileSheetOpen(true)}
-            className="md:hidden inline-flex items-center gap-1.5 text-xs min-h-11 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted transition-colors"
+            className="md:hidden inline-flex items-center gap-1.5 text-xs min-h-11 px-3 rounded-lg border border-border/80 bg-background text-foreground font-medium hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             aria-label="Abrir panel de filtros avanzados"
+            aria-expanded={isMobileSheetOpen}
+            aria-haspopup="dialog"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>Filtros</span>
@@ -182,10 +193,26 @@ export function FilterBar({
 
         {/* Lado derecho: Contador de Transacciones, Exportación CSV y Reset */}
         <div className="flex items-center gap-2 ml-auto">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
-            <span className="text-muted-foreground">/ {formatNumber(totalCount)}</span>
+          {/* `role="status"`: el conteo cambia con cada filtro aplicado y sin
+              región viva el resultado del filtrado era silencioso. Los números
+              visibles quedan `aria-hidden` y una frase `sr-only` es lo que se
+              anuncia, para que suene como oración y no como "497 barra 1000". */}
+          <div
+            role="status"
+            aria-live="polite"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" aria-hidden="true" />
+            <span className="font-semibold text-foreground" aria-hidden="true">
+              {formatNumber(filteredCount)}
+            </span>
+            <span className="text-muted-foreground" aria-hidden="true">
+              / {formatNumber(totalCount)}
+            </span>
+            <span className="sr-only">
+              {formatNumber(filteredCount)} de {formatNumber(totalCount)} registros coinciden
+              con los filtros aplicados.
+            </span>
           </div>
 
           {/* Exportación analítica en cliente (0ms) */}

@@ -4,7 +4,17 @@ import React from 'react';
 
 export function DashboardSkeleton() {
   return (
-    <div className="w-full space-y-6 pb-12 animate-pulse" aria-busy="true" aria-label="Cargando panel de control">
+    /* `role="status"` + `aria-live`: con `aria-label` sobre un <div> sin rol el
+       mensaje no se anunciaba, así que la carga de las tres rutas era silenciosa
+       para un lector de pantalla. `sr-only` duplica el texto como contenido real
+       porque un nombre accesible no sustituye a una región viva. */
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="w-full space-y-6 pb-12 animate-pulse motion-reduce:animate-none"
+    >
+      <span className="sr-only">Cargando panel de control</span>
       {/* Top Header Skeleton */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
         <div className="space-y-2">

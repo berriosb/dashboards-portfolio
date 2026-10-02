@@ -60,9 +60,10 @@ export function ChartFrame({
             <button
               type="button"
               onClick={() => setShowTable(!showTable)}
-              className="tap-target p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-pressed={showTable}
+              className="tap-target p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1"
               title={showTable ? 'Ver gráfico' : 'Ver tabla de datos'}
-              aria-label={showTable ? 'Ver gráfico' : 'Ver tabla accesible'}
+              aria-label={showTable ? 'Ver gráfico' : 'Ver tabla de datos'}
             >
               {showTable ? <BarChart2 className="w-3.5 h-3.5" /> : <Table className="w-3.5 h-3.5" />}
             </button>

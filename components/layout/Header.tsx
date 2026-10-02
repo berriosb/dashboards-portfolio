@@ -3,9 +3,17 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Landmark, Truck } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Landmark, Truck, Menu } from 'lucide-react';
 import { PrintReportButton } from '@/components/ui/PrintReportButton';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 export function Header() {
   const pathname = usePathname();
@@ -81,6 +89,63 @@ export function Header() {
 
         {/* Controles y Status Institucional */}
         <div className="flex items-center gap-2.5">
+          {/* Navegación Móvil.
+              El <nav> de desktop es `hidden md:flex` y no existía ninguna
+              alternativa: bajo 768px la única forma de pasar de un dashboard a
+              otro era volver al logo. Este trigger reproduce el mismo
+              vocabulario (icono + acento por dashboard) en un Sheet lateral. */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Abrir navegación entre dashboards"
+                className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-lg border border-border/80 bg-background text-foreground hover:bg-muted transition-colors"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-3/4 max-w-xs p-0">
+              <SheetHeader className="px-5 pt-5 pb-4 border-b border-border">
+                <SheetTitle className="text-sm">Dashboards</SheetTitle>
+                <SheetDescription className="text-xs">
+                  Elige la vertical de análisis para navegar.
+                </SheetDescription>
+              </SheetHeader>
+              <nav className="flex flex-col gap-1 p-3">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      aria-current={item.active ? 'page' : undefined}
+                      className={`inline-flex items-center gap-2.5 px-3 min-h-11 rounded-lg text-sm transition-colors ${
+                        item.active
+                          ? 'bg-secondary text-secondary-foreground font-semibold'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${item.accent}`} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+                <Link
+                  href="/"
+                  aria-current={pathname === '/' ? 'page' : undefined}
+                  className={`inline-flex items-center gap-2.5 px-3 min-h-11 rounded-lg text-sm transition-colors ${
+                    pathname === '/'
+                      ? 'bg-secondary text-secondary-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4 text-foreground" />
+                  <span>Vitrina</span>
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           {/* Status SLA Institucional sin animación agresiva */}
           <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border/60 text-[11px] font-medium text-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

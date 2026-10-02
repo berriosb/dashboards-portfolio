@@ -290,14 +290,16 @@ export default function Home() {
               <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 w-fit">
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <h3 className="font-semibold text-foreground text-sm">`tabular-nums` & WCAG</h3>
+              <h3 className="font-semibold text-foreground text-sm">
+                <code className="font-mono text-[13px]">tabular-nums</code> &amp; WCAG
+              </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Cifras fijas que no bailan durante la interacción. Estados acompañados de etiquetas e iconos para accesibilidad inclusiva.
               </p>
             </div>
 
             <div className="space-y-2 p-4 rounded-xl bg-muted/40 border border-border/60">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 w-fit">
+              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-fit">
                 <Layers className="w-4 h-4" />
               </div>
               <h3 className="font-semibold text-foreground text-sm">Deep Linking con nuqs</h3>

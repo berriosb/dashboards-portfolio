@@ -72,7 +72,11 @@ export function FilterSelect({
   return (
     <SelectPrimitive.Root value={internalValue} onValueChange={handleValueChange}>
       <SelectPrimitive.Trigger
-        aria-label={ariaLabel}
+        // El nombre accesible incluye el valor actual: con `aria-label` fijo el
+        // `SelectPrimitive.Value` de la línea siguiente quedaba anulado y el
+        // lector de pantalla anunciaba "Filtrar por categoría" sin decir cuál
+        // estaba elegida.
+        aria-label={`${ariaLabel}: ${displayLabel}`}
         className={`inline-flex items-center justify-between gap-2 text-xs min-h-11 pl-2.5 pr-2 rounded-lg border border-border/80 bg-background text-foreground font-medium transition-all shadow-2xs hover:bg-muted/40 hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer select-none ${className}`}
       >
         <div className="flex items-center gap-1.5 truncate">

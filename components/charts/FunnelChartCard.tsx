@@ -53,8 +53,12 @@ export function FunnelChartCard({ data }: FunnelChartCardProps) {
                     {step.step}
                   </span>
                   {dropOffRate && (
+                    /* Antes `hidden sm:inline-flex`: bajo 640px la señal de
+                       abandono desaparecía entera, que es justo el insight que
+                       el embudo existe para mostrar. Ahora el badge se parte en
+                       su propia línea en vez de ocultarse. */
                     <span
-                      className="hidden sm:inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-medium border border-rose-200/50 dark:border-rose-900/40"
+                      className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-medium border border-rose-200/50 dark:border-rose-900/40 shrink-0"
                       title={`Tasa de abandono respecto al paso anterior: -${dropOffRate}%`}
                     >
                       <ArrowDown className="w-2.5 h-2.5" />

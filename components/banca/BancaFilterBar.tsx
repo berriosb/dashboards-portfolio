@@ -192,9 +192,17 @@ export function BancaFilterBar({
         {/* Lado derecho: Contador, Exportación CSV y Reset */}
         <div className="flex items-center gap-2 ml-auto">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground tabular-nums">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-            <span className="font-semibold text-foreground">{formatNumber(filteredCount)}</span>
-            <span className="text-muted-foreground">/ {formatNumber(totalCount)}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
+            <span className="font-semibold text-foreground" aria-hidden="true">
+              {formatNumber(filteredCount)}
+            </span>
+            <span className="text-muted-foreground" aria-hidden="true">
+              / {formatNumber(totalCount)}
+            </span>
+            <span className="sr-only">
+              {formatNumber(filteredCount)} de {formatNumber(totalCount)} créditos coinciden
+              con los filtros aplicados.
+            </span>
           </div>
 
           {/* Exportación CSV instantánea */}
@@ -240,7 +248,12 @@ export function BancaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs">
               <Layers className="w-3 h-3" />
               <span>Producto: <strong>{selectedProducto}</strong></span>
-              <button type="button" onClick={() => onProductoChange(null)}>
+              <button
+                type="button"
+                onClick={() => onProductoChange(null)}
+                aria-label={`Eliminar filtro de producto ${selectedProducto}`}
+                className="hover:text-emerald-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -250,7 +263,12 @@ export function BancaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs">
               <Users className="w-3 h-3" />
               <span>Segmento: <strong>{selectedSegmento}</strong></span>
-              <button type="button" onClick={() => onSegmentoChange(null)}>
+              <button
+                type="button"
+                onClick={() => onSegmentoChange(null)}
+                aria-label={`Eliminar filtro de segmento ${selectedSegmento}`}
+                className="hover:text-emerald-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -260,7 +278,12 @@ export function BancaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs">
               <MapPin className="w-3 h-3" />
               <span>Región: <strong>{selectedRegion}</strong></span>
-              <button type="button" onClick={() => onRegionChange(null)}>
+              <button
+                type="button"
+                onClick={() => onRegionChange(null)}
+                aria-label={`Eliminar filtro de región ${selectedRegion}`}
+                className="hover:text-emerald-950 dark:hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -270,7 +293,12 @@ export function BancaFilterBar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs">
               <AlertTriangle className="w-3 h-3" />
               <span>Mora: <strong>{selectedTramoMora}</strong></span>
-              <button type="button" onClick={() => onTramoMoraChange(null)}>
+              <button
+                type="button"
+                onClick={() => onTramoMoraChange(null)}
+                aria-label={`Eliminar filtro de tramo de mora ${selectedTramoMora}`}
+                className="hover:text-rose-950 dark:hover:text-rose-50"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -289,11 +317,12 @@ export function BancaFilterBar({
           </SheetHeader>
           <div className="space-y-4 py-4 text-xs">
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Producto</label>
-              <div className="flex flex-wrap gap-1.5">
+              <span className="font-semibold text-foreground">Producto</span>
+              <div role="group" aria-label="Filtrar por producto" className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={() => onProductoChange(null)}
+                  aria-pressed={selectedProducto === null}
                   className={`px-3 py-1 rounded-full border ${selectedProducto === null ? 'bg-emerald-600 text-white' : 'bg-card'}`}
                 >
                   Todos
@@ -303,6 +332,7 @@ export function BancaFilterBar({
                     key={p}
                     type="button"
                     onClick={() => onProductoChange(selectedProducto === p ? null : p)}
+                    aria-pressed={selectedProducto === p}
                     className={`px-3 py-1 rounded-full border ${selectedProducto === p ? 'bg-emerald-600 text-white' : 'bg-card'}`}
                   >
                     {p}
@@ -312,11 +342,12 @@ export function BancaFilterBar({
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Segmento</label>
-              <div className="flex flex-wrap gap-1.5">
+              <span className="font-semibold text-foreground">Segmento</span>
+              <div role="group" aria-label="Filtrar por segmento" className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={() => onSegmentoChange(null)}
+                  aria-pressed={selectedSegmento === null}
                   className={`px-3 py-1 rounded-full border ${selectedSegmento === null ? 'bg-emerald-600 text-white' : 'bg-card'}`}
                 >
                   Todos
@@ -326,6 +357,7 @@ export function BancaFilterBar({
                     key={s}
                     type="button"
                     onClick={() => onSegmentoChange(selectedSegmento === s ? null : s)}
+                    aria-pressed={selectedSegmento === s}
                     className={`px-3 py-1 rounded-full border ${selectedSegmento === s ? 'bg-emerald-600 text-white' : 'bg-card'}`}
                   >
                     {s}
@@ -335,11 +367,12 @@ export function BancaFilterBar({
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-foreground">Tramo de Mora</label>
-              <div className="flex flex-wrap gap-1.5">
+              <span className="font-semibold text-foreground">Tramo de Mora</span>
+              <div role="group" aria-label="Filtrar por tramo de mora" className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
                   onClick={() => onTramoMoraChange(null)}
+                  aria-pressed={selectedTramoMora === null}
                   className={`px-3 py-1 rounded-full border ${selectedTramoMora === null ? 'bg-emerald-600 text-white' : 'bg-card'}`}
                 >
                   Todos
@@ -349,6 +382,7 @@ export function BancaFilterBar({
                     key={t}
                     type="button"
                     onClick={() => onTramoMoraChange(selectedTramoMora === t ? null : t)}
+                    aria-pressed={selectedTramoMora === t}
                     className={`px-3 py-1 rounded-full border ${selectedTramoMora === t ? 'bg-rose-600 text-white' : 'bg-card'}`}
                   >
                     {t}
@@ -358,12 +392,22 @@ export function BancaFilterBar({
             </div>
           </div>
           <SheetFooter className="pt-2 border-t border-border flex flex-row gap-2">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className="inline-flex items-center justify-center gap-1.5 text-xs font-medium min-h-11 px-3 rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Limpiar
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsMobileSheetOpen(false)}
-              className="w-full text-xs py-2.5 rounded-lg bg-emerald-600 text-white font-medium"
+              className="flex-1 text-xs min-h-11 py-2.5 rounded-lg bg-emerald-600 text-white font-medium"
             >
-              Aplicar filtros ({formatNumber(filteredCount)} registros)
+              Ver {formatNumber(filteredCount)} registros
             </button>
           </SheetFooter>
         </SheetContent>

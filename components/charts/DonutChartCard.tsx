@@ -114,12 +114,25 @@ export function DonutChartCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-4 text-xs pt-1 border-t border-border/50">
+      {/* Leyenda = control de cross-filter, no texto decorativo. Antes era un
+          `<div onClick>`: sin `role`, sin tab stop y sin handler de teclado, así
+          que el filtro por canal sólo se podía activar con ratón (WCAG 2.1.1).
+          Ahora cada opción es un `<button>` con `aria-pressed`, que además le
+          da Enter/Espacio gratis. `focus-visible:outline-none` +
+          `focus-visible:ring-ring` conservan el anillo propio sin duplicar el
+          global de globals.css. */}
+      <div
+        role="group"
+        aria-label="Filtrar el panel por canal"
+        className="flex items-center justify-center gap-4 text-xs pt-1 border-t border-border/50"
+      >
         {data.map((d, idx) => (
-          <div
+          <button
             key={d.canal}
+            type="button"
             onClick={() => onSelectChannel?.(selectedChannel === d.canal ? null : d.canal)}
-            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
+            aria-pressed={selectedChannel === d.canal}
+            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
               selectedChannel === d.canal
                 ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-semibold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -128,10 +141,11 @@ export function DonutChartCard({
             <span
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+              aria-hidden="true"
             />
             <span className="capitalize">{d.canal}:</span>
             <span className="font-bold tabular-nums text-foreground">{formatPercent(d.porcentaje)}</span>
-          </div>
+          </button>
         ))}
       </div>
     </ChartFrame>

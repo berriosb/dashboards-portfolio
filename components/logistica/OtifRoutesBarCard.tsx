@@ -71,7 +71,15 @@ export function OtifRoutesBarCard({
           >
             <XAxis
               type="number"
-              domain={[75, 100]}
+              /* Dominio derivado de los datos, no fijo en [75, 100]. Con el
+                 dominio fijo cualquier ruta bajo 75% se dibujaba como barra de
+                 largo cero, indistinguible de un dato faltante: la peor ruta
+                 —justo la que hay que actuar — desaparecía. El piso se
+                 redondea a 5 para que la escala siga siendo legible. */
+              domain={[
+                Math.max(0, Math.floor((Math.min(...data.map((d) => d.otifPct)) - 5) / 5) * 5),
+                100,
+              ]}
               tickFormatter={(v) => `${v}%`}
               tickLine={false}
               axisLine={false}

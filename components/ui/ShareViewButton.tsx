@@ -67,6 +67,13 @@ export function ShareViewButton({
           <span>{label}</span>
         </>
       )}
+      {/* Región viva persistente: el texto de confirmación se anuncia al
+          cambiar, no al montarse. Montar el `<span>` sólo cuando `copied` es
+          true hace que muchos lectores de pantalla no lo anuncien, porque la
+          región debe existir antes de que cambie su contenido. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? 'Enlace copiado al portapapeles' : ''}
+      </span>
     </button>
   );
 }

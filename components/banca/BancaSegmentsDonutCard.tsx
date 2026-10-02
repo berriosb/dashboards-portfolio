@@ -118,12 +118,21 @@ export function BancaSegmentsDonutCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 text-xs pt-1 flex-wrap border-t border-border/50">
+      {/* Mismo criterio que DonutChartCard: la leyenda es el control de
+          cross-filter, así que va como `<button>` con `aria-pressed` y no como
+          `<div onClick>` (WCAG 2.1.1). */}
+      <div
+        role="group"
+        aria-label="Filtrar el panel por segmento de cliente"
+        className="flex items-center justify-center gap-3 text-xs pt-1 flex-wrap border-t border-border/50"
+      >
         {data.map((d, idx) => (
-          <div
+          <button
             key={d.segmento}
+            type="button"
             onClick={() => onSelectSegment?.(selectedSegment === d.segmento ? null : d.segmento)}
-            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all ${
+            aria-pressed={selectedSegment === d.segmento}
+            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
               selectedSegment === d.segmento
                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -132,10 +141,11 @@ export function BancaSegmentsDonutCard({
             <span
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+              aria-hidden="true"
             />
             <span>{d.segmento}:</span>
             <span className="font-bold tabular-nums text-foreground">{formatPercent(d.porcentaje)}</span>
-          </div>
+          </button>
         ))}
       </div>
     </ChartFrame>

@@ -123,12 +123,15 @@ export function BancaDrilldownDrawer({
         <div className="py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
+            {/* `aria-label`: el placeholder no es nombre accesible, así que el
+                campo se anunciaba sólo como "campo de texto" (WCAG 4.1.2). */}
             <input
               type="text"
+              aria-label="Buscar por RUT, deudor o crédito"
               placeholder="Buscar por RUT, deudor o crédito..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground"
             />
           </div>
 
@@ -197,22 +200,50 @@ export function BancaDrilldownDrawer({
             padre, el <tbody> reserva el alto total y cada fila visible se
             posiciona en su offset. `aria-rowcount`/`aria-rowindex` mantienen
             el conteo real para lectores de pantalla, que si no anuncian solo
-            las filas montadas. */}
-        <div ref={setScrollEl} className="flex-1 overflow-y-auto border border-border rounded-xl mt-3">
+            las filas montadas.
+
+            `tabIndex={0}` + `role="region"` con etiqueta: sin eso el contenedor
+            es un scroll purely-mouse y las filas que la virtualización no monta
+            son inalcanzables con teclado.
+
+            Los roles explícitos (`rowgroup`/`row`/`columnheader`/`cell`) no son
+            redundantes: la virtualización aplica `display: grid` a <thead>,
+            <tbody> y <tr> para posicionar las filas, y un contenedor grid pierde
+            el rol implícito de tabla, así que `aria-rowcount`/`aria-rowindex`
+            quedaban colgando de elementos `generic`. */}
+        <div
+          ref={setScrollEl}
+          tabIndex={0}
+          role="region"
+          aria-label="Detalle de cartera filtrada, desplazable"
+          className="flex-1 overflow-y-auto border border-border rounded-xl mt-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
           <table className="w-full text-left text-xs border-collapse" aria-rowcount={displayRecords.length}>
             <thead
+              role="rowgroup"
               className="bg-muted/50 sticky top-0 z-10 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider"
               style={{ display: 'grid' }}
             >
-              <tr style={{ display: 'grid', gridTemplateColumns: FILAS_POR_COLUMNA }}>
-                <th className="py-2.5 px-3 font-semibold">Crédito / RUT</th>
-                <th className="py-2.5 px-3 font-semibold">Producto / Seg.</th>
-                <th className="py-2.5 px-3 font-semibold text-right">Saldo CLP</th>
-                <th className="py-2.5 px-3 font-semibold text-right">Mora</th>
-                <th className="py-2.5 px-3 font-semibold text-right">Provisión</th>
+              <tr role="row" style={{ display: 'grid', gridTemplateColumns: FILAS_POR_COLUMNA }}>
+                <th role="columnheader" scope="col" className="py-2.5 px-3 font-semibold">
+                  Crédito / RUT
+                </th>
+                <th role="columnheader" scope="col" className="py-2.5 px-3 font-semibold">
+                  Producto / Seg.
+                </th>
+                <th role="columnheader" scope="col" className="py-2.5 px-3 font-semibold text-right">
+                  Saldo CLP
+                </th>
+                <th role="columnheader" scope="col" className="py-2.5 px-3 font-semibold text-right">
+                  Mora
+                </th>
+                <th role="columnheader" scope="col" className="py-2.5 px-3 font-semibold text-right">
+                  Provisión
+                </th>
               </tr>
             </thead>
             <tbody
+              role="rowgroup"
               className="divide-y divide-border/60"
               style={{
                 display: 'grid',
@@ -226,6 +257,7 @@ export function BancaDrilldownDrawer({
                 return (
                   <tr
                     key={cr.id}
+                    role="row"
                     aria-rowindex={filaVirtual.index + 2}
                     className="hover:bg-muted/30 transition-colors"
                     style={{
@@ -239,24 +271,24 @@ export function BancaDrilldownDrawer({
                       transform: `translateY(${filaVirtual.start}px)`,
                     }}
                   >
-                    <td className="py-2 px-3">
+                    <td role="cell" className="py-2 px-3">
                       <div className="font-medium text-foreground truncate">{cr.nombre}</div>
                       <div className="text-[10px] text-muted-foreground font-mono">
                         {cr.rut} · {cr.id}
                       </div>
                     </td>
-                    <td className="py-2 px-3">
+                    <td role="cell" className="py-2 px-3">
                       <div className="font-medium text-foreground truncate">{cr.producto}</div>
                       <div className="text-[10px] text-muted-foreground">{cr.segmento}</div>
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums font-semibold text-foreground relative">
+                    <td role="cell" className="py-2 px-3 text-right tabular-nums font-semibold text-foreground relative">
                       <div
                         className="absolute inset-y-1 right-1 bg-emerald-500/10 dark:bg-emerald-400/15 rounded-sm pointer-events-none transition-all duration-300"
                         style={{ width: `${Math.min(100, Math.max(0, (cr.saldo / maxSaldo) * 100))}%` }}
                       />
                       <span className="relative z-10">{formatCLP(cr.saldo)}</span>
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums">
+                    <td role="cell" className="py-2 px-3 text-right tabular-nums">
                       <span
                         className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                           cr.diasMora >= 90
@@ -271,7 +303,7 @@ export function BancaDrilldownDrawer({
                         {cr.diasMora === 0 ? 'Al día' : `${cr.diasMora}d`}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums text-muted-foreground font-mono text-[11px]">
+                    <td role="cell" className="py-2 px-3 text-right tabular-nums text-muted-foreground font-mono text-[11px]">
                       {formatCLP(cr.provision)}
                     </td>
                   </tr>
