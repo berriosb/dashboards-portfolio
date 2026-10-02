@@ -959,10 +959,10 @@ berriosb/berriosb                       ← profile README (lista TODO)
 ├── retail-bi-chile                     ← evidencia dura retail (Python + DuckDB)
 ├── banca-chile-datos                   ← evidencia dura banca (Python + DuckDB)
 ├── logistica-chile-datos               ← evidencia dura logística (Python + DuckDB)
+├── dashboards-portfolio              ← 3 tableros interactivos (demo viva)
 ├── chilecompra-anomalias-sql           ← SQL público + visualización
-├── sql-portfolio                       ← queries SQL puras
-├── powerbi-models-tmdl                 ← modelos Power BI sin .pbix
 ├── optimacx-reclamos (privado)         ← full-stack en producción
+├── powerbi-orchestrator-mcp           ← servidor MCP Python (PyPI)
 └── ... (AI/dev tools)
 ```
 
