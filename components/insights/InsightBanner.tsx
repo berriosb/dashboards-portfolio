@@ -1,11 +1,26 @@
 import React from 'react';
-import { Lightbulb, ArrowRight } from 'lucide-react';
+import { Lightbulb, ArrowRight, Info } from 'lucide-react';
 
 interface InsightBannerProps {
   titulo: string;
   descripcion: string;
   accionRecomendada: string;
   variant?: 'retail' | 'banca' | 'logistica';
+  /**
+   * Si el hallazgo se recalcula con los filtros o si es contexto fijo del
+   * dataset.
+   *
+   * El texto viene de `dataset.meta.businessInsight`, que NO se recalcula: es
+   * contexto del dataset completo. Antes el banner se rotulaba "Informe
+   * Analítico Automatizado", y con `?canal=online` seguía afirmando una caída
+   * en tiendas físicas mientras el panel mostraba solo canal online: el
+   * producto afirmaba algo que sus propios controles acababan de refutar. Con
+   * filtros activos, el banner ahora lo declara en pantalla en vez de dejarlo
+   * adivinar.
+   */
+  alcance?: 'dataset' | 'filtrado';
+  /** Resumen legible de los filtros activos, para que el aviso sea concreto. */
+  filtrosActivos?: string[];
   /**
    * Nivel del título. Por defecto `h2`: el banner es la primera sección después
    * del `h1` de la página y antes iba en `h3`, dejando un salto h1 → h3.
@@ -18,6 +33,8 @@ export function InsightBanner({
   descripcion,
   accionRecomendada,
   variant = 'retail',
+  alcance = 'dataset',
+  filtrosActivos = [],
   headingLevel: Heading = 'h2',
 }: InsightBannerProps) {
   const config = {
@@ -64,9 +81,29 @@ export function InsightBanner({
               {config.severity}
             </span>
             <span className="text-[11px] text-muted-foreground font-medium">
-              Informe Analítico Automatizado
+              Contexto del dataset · no se recalcula con los filtros
             </span>
           </div>
+
+          {/* Aviso de alcance. Aparece SOLO cuando hay filtros activos: es el
+              momento en que el hallazgo deja de describir lo que se está
+              mirando, y el usuario no tiene forma de saberlo por sí solo. */}
+          {alcance === 'filtrado' && (
+            <p
+              className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground bg-muted/50 border border-border/60 rounded-md px-2 py-1.5"
+              role="note"
+            >
+              <Info className="w-3 h-3 mt-px shrink-0" aria-hidden="true" />
+              <span>
+                Estás viendo los KPIs filtrados
+                {filtrosActivos.length > 0 && (
+                  <> por <strong className="text-foreground font-medium">{filtrosActivos.join(', ')}</strong></>
+                )}
+                , pero este hallazgo describe el <strong className="text-foreground font-medium">dataset completo</strong>.
+                Los números y los gráficos de abajo sí responden a los filtros.
+              </span>
+            </p>
+          )}
 
           <Heading className="font-bold text-foreground text-sm sm:text-base tracking-tight leading-snug">
             {titulo}

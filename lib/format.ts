@@ -1,27 +1,62 @@
+/**
+ * Formateo numérico de es-CL.
+ *
+ * Las cifras salen de un solo lugar. Si el separador decimal o el de miles se
+ * escriben a mano en un componente, el mismo número aparece con dos formatos
+ * distintos en dos tarjetas de la misma pantalla, y en un dashboard chileno eso
+ * se lee como scaffolding sin terminar.
+ */
+
+/**
+ * Separador decimal chileno (coma) con un número fijo de decimales.
+ *
+ * Existe porque `Number.prototype.toFixed` SIEMPRE devuelve punto, y su
+ * resultado se estaba pintando directo en el embudo: "83.3% fuga" al lado de
+ * "16,7%" en la misma tarjeta. `.toFixed` no tiene formato de locale, por eso
+ * el componente no podía arreglarse solo.
+ */
+export function formatDecimal(value: number, decimals: number = 1): string {
+  return value.toLocaleString('es-CL', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+/**
+ * Pesos chilenos en notación compacta.
+ *
+ * Decisiones que importan en el mercado local:
+ *
+ * - Miles van como `"mil"`, no `K`. La `K` es anglicismo y convivía con el
+ *   resto de la app íntegramente en español.
+ * - Millones van como `"M"` y, desde mil millones, se conserva la misma unidad
+ *   con separador de miles: `$198.454M`. Antes se usaba `"B"` para 10⁹, y eso
+ *   no es solo un anglicismo: en español chileno "billón" es 10¹², así que
+ *   rotular 10⁹ como "billones" sería directamente falso.
+ * - Nunca se inventa una abreviación nueva por debajo de mil: bajo ese
+ *   umbral el número se muestra entero.
+ */
 export function formatCLP(amount: number, options?: { compact?: boolean }): string {
   if (options?.compact) {
-    if (Math.abs(amount) >= 1_000_000_000) {
-      const b = (amount / 1_000_000_000).toFixed(1).replace('.', ',');
-      return `$${b}B`;
+    const abs = Math.abs(amount);
+
+    // Desde mil millones, la misma "M" con separador de miles: $198.454M.
+    if (abs >= 1_000_000_000) {
+      return `$${formatNumber(amount / 1_000_000)}M`;
     }
-    if (Math.abs(amount) >= 1_000_000) {
-      const m = (amount / 1_000_000).toFixed(1).replace('.', ',');
-      return `$${m}M`;
+    if (abs >= 1_000_000) {
+      return `$${formatDecimal(amount / 1_000_000, 1)}M`;
     }
-    if (Math.abs(amount) >= 1_000) {
-      const k = (amount / 1_000).toFixed(0);
-      return `$${k}K`;
+    if (abs >= 1_000) {
+      return `$${formatNumber(amount / 1_000)} mil`;
     }
   }
 
-  const rounded = Math.round(amount);
-  const formatted = new Intl.NumberFormat('es-CL').format(rounded);
-  return `$${formatted}`;
+  return `$${formatNumber(amount)}`;
 }
 
 export function formatPercent(value: number, decimals: number = 1): string {
-  const formatted = value.toFixed(decimals).replace('.', ',');
-  return `${formatted}%`;
+  return `${formatDecimal(value, decimals)}%`;
 }
 
 export function formatNumber(value: number): string {

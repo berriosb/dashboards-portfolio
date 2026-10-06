@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight, Minus, Check, AlertTriangle } from 'lucide-react';
 import { GlossaryTooltip } from '@/components/ui/GlossaryTooltip';
-import { formatCLP, formatPercent, formatNumber } from '@/lib/format';
+import { formatCLP, formatPercent, formatNumber, formatDecimal } from '@/lib/format';
 import { MiniSparkline } from './MiniSparkline';
 
 interface KpiCardProps {
@@ -77,7 +77,9 @@ export function KpiCard({
   } else if (unit === 'pts') {
     formattedValue = `${Math.round(value)} pts`;
   } else if (unit === 'hrs') {
-    formattedValue = `${value.toFixed(1)} hrs`;
+    // `toFixed` devuelve punto y el valor grande de la card convive con otros
+    // porcentajes de la misma fila: "38.0 hrs" al lado de "89,4%".
+    formattedValue = `${formatDecimal(value, 1)} hrs`;
   } else {
     formattedValue = formatNumber(value);
   }
@@ -139,6 +141,16 @@ export function KpiCard({
   const cumpleMeta = isLowerBetter ? value <= (benchmark as number) : true;
   const formatMeta = (n: number) => (unit === 'CLP' ? formatCLP(n, { compact: true }) : `${n}${unit}`);
 
+  /* Estado de cumplimiento, para hero y no-hero alike.
+     Antes el chip "Sobre/Bajo meta" solo se pintaba en la rama `isLowerBetter`
+     (mora, lead time, costo), así que la KPI hero más importante de
+     Logística —Cumplimiento OTIF— quedaba sin ninguno: se leía "89,8% · Meta:
+     95% · 95%" y el "95%" de la derecha, que es el porcentaje de meta, se
+     tomaba por el valor. Para "más es mejor" el estado sale de la misma
+     comparación, con icono y texto para no depender del color (AGENTS §3.3). */
+  const cumpleObjetivo =
+    hasBenchmark && (trendDirection === 'lower-is-better' ? value <= benchmark : value >= benchmark);
+
   return (
     <div
       className={`bg-card rounded-xl border border-border/80 p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between transition-all duration-150 hover:border-border hover:shadow-xs ${
@@ -174,7 +186,11 @@ export function KpiCard({
             {isDown && <ArrowDownRight className="w-2.5 h-2.5" />}
             {isNeutral && <Minus className="w-2.5 h-2.5" />}
             <span className="tabular-nums font-mono">
-              {deltaPct > 0 ? `+${deltaPct}%` : `${deltaPct}%`}
+              {/* Coma decimal: el delta se leía "-7.3%" mientras el valor de la
+                  misma tarjeta decía "$37,7M". Dos convenciones numéricas en
+                  dos líneas contiguas de la misma card. */}
+              {deltaPct > 0 ? '+' : ''}
+              {formatDecimal(deltaPct, 1)}%
             </span>
           </div>
         )}
@@ -200,15 +216,27 @@ export function KpiCard({
           muestra sin clipear: exceder la meta es información, no un tope. */}
       {isHero && barPct !== null && (
         <div className="space-y-1 pt-1.5 border-t border-border/60">
-          <div className="flex items-center justify-between text-[10.5px] text-muted-foreground">
-            <span className="truncate">
+          <div className="flex items-center justify-between gap-2 text-[10.5px] text-muted-foreground">
+            <span className="min-w-0 truncate">
               {benchmarkLabel ?? 'Meta'}:{' '}
               <strong className="text-foreground font-medium tabular-nums">
                 {hasBenchmark ? formatMeta(benchmark as number) : '—'}
               </strong>
             </span>
-            <span className="font-mono font-semibold text-foreground text-[10px] tabular-nums">
-              {Math.round(cumplimientoPct as number)}%
+            {/* Rótulo explícito del porcentaje. Un "95%" suelto al lado de
+                "Meta: 95%" se leía como el valor de la métrica, que era
+                justamente lo que pasaba en Cumplimiento OTIF. Además el estado
+                se dice con icono y palabra, no solo con color (AGENTS §3.3). */}
+            <span
+              className="shrink-0 inline-flex items-center gap-1 font-semibold text-foreground text-[10px] tabular-nums"
+              title={`${Math.round(cumplimientoPct as number)}% de la meta ${formatMeta(benchmark as number)}`}
+            >
+              {cumpleObjetivo ? (
+                <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              ) : (
+                <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" aria-hidden="true" />
+              )}
+              {Math.round(cumplimientoPct as number)}% de la meta
             </span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
@@ -246,17 +274,40 @@ export function KpiCard({
         </div>
       )}
 
-      {/* Referencia simple para el resto de tarjetas no-hero */}
+      {/* Referencia simple para el resto de tarjetas no-hero.
+
+          `benchmarkLabel` y `benchmarkSource` competían por el mismo flex con
+          `truncate` en ambos, y el que perdía era siempre el VALOR de la meta:
+          se veía "Meta: $2…" y "Meta del período visible (pror…". Un objetivo
+          que no se puede leer no permite calcular el gap, que es justo para lo
+          que está. Ahora el valor nunca se recorta y la fuente pasa a una
+          segunda línea, que sí tiene ancho para leerse completa. */}
       {!isHero && !isLowerBetter && (
-        <div className="pt-2 mt-1 border-t border-border/50 flex items-center justify-between text-[10.5px] text-muted-foreground gap-1">
+        <div className="pt-2 mt-1 border-t border-border/50 flex flex-col gap-0.5 text-[10.5px] text-muted-foreground">
           {hasBenchmark ? (
             <>
-              <span className="truncate">
-                {benchmarkLabel ?? 'Meta'}:{' '}
-                <strong className="text-foreground font-medium tabular-nums">{formatMeta(benchmark)}</strong>
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="truncate">
+                  {benchmarkLabel ?? 'Meta'}:{' '}
+                  <strong className="text-foreground font-medium tabular-nums">{formatMeta(benchmark)}</strong>
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 font-medium shrink-0 ${
+                    cumpleObjetivo
+                      ? 'text-emerald-700 dark:text-emerald-400'
+                      : 'text-rose-700 dark:text-rose-400'
+                  }`}
+                >
+                  {cumpleObjetivo ? (
+                    <Check className="w-3 h-3" aria-hidden="true" />
+                  ) : (
+                    <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                  )}
+                  {cumpleObjetivo ? 'Cumple' : 'No cumple'}
+                </span>
               </span>
               {benchmarkSource && (
-                <span className="truncate text-muted-foreground text-[10px]" title={benchmarkSource}>
+                <span className="text-[10px] leading-tight" title={benchmarkSource}>
                   {benchmarkSource}
                 </span>
               )}

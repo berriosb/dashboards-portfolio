@@ -10,6 +10,30 @@ export interface CustomerRfmScore {
 }
 
 /**
+ * Rótulos en español de los segmentos RFM.
+ *
+ * Los IDENTIFICADORES siguen en inglés a propósito: viajan en la URL
+ * (`?segmentoRfm=Champions`), son claves del JSON generado y los usa el motor
+ * de scoring. Renombrarlos tocaría el dataset, las URLs y los tests para
+ * cambiar lo que el usuario ve, que es el único objetivo de este mapa.
+ *
+ * Antes la UI mostraba los IDs crudos: "Champions", "At Risk", "Hibernating",
+ * en un producto íntegramente en español y con copy de autor.
+ */
+export const RFM_SEGMENT_LABELS: Record<string, string> = {
+  Champions: 'Campeones',
+  Loyal: 'Fieles',
+  Potential: 'Potenciales',
+  'At Risk': 'En riesgo',
+  Hibernating: 'Inactivos',
+};
+
+/** Rótulo en español de un segmento RFM, o el mismo ID si no está mapeado. */
+export function rfmSegmentLabel(segment: string): string {
+  return RFM_SEGMENT_LABELS[segment] ?? segment;
+}
+
+/**
  * Rango de valores realmente observado dentro de un quintil, derivado de la
  * distribución de la población y no de un umbral fijo escrito a mano.
  *

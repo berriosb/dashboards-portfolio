@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { RepoLinkBadge } from '@/components/ui/RepoLinkBadge';
+import { landingMetrics } from '@/lib/landing-metrics';
 import {
   ShoppingCart,
   Landmark,
@@ -17,6 +18,12 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  /* Las cifras de las tarjetas salen de los motores de los dashboards, no de
+     strings escritos a mano. Antes eran literales y por eso podían contradecir
+     a la página que describen: la landing decía "HHI 1.820 pts · Concentración
+     moderada" mientras el dashboard decía "1463 pts · Diversificado". */
+  const metricas = landingMetrics();
+
   const dashboards = [
     {
       id: 'retail',
@@ -28,11 +35,7 @@ export default function Home() {
       accentColor: 'blue',
       description:
         'Monitoreo ejecutivo de transacciones omnicanal, márgenes por categoría, embudo digital y segmentación algorítmica de clientes RFM.',
-      metrics: [
-        { label: 'Ventas Netas', value: '$37,7M CLP', note: 'Margen bruto 42,9%' },
-        { label: 'Margen Bruto', value: '42,9%', note: 'Meta: 40%' },
-        { label: 'Ticket Promedio', value: '$153.372', note: 'Meta: $170.000' },
-      ],
+      metrics: metricas.retail,
       features: [
         'Matriz RFM 5x5 nativa (CSS Grid + Radix Tooltips)',
         'Cross-filtering multidimensional instantáneo (0ms)',
@@ -52,11 +55,7 @@ export default function Home() {
       accentColor: 'emerald',
       description:
         'Gestión de cartera crediticia comercial y de consumo, mora temprana y tardía CMF, matrices de transición de riesgo y curvas vintage.',
-      metrics: [
-        { label: 'Cartera Vigente', value: '$198.454M CLP', note: 'Consumo y PyME' },
-        { label: 'Mora CMF 90+', value: '1,7%', note: 'Banda de referencia: 1,5% - 2,9%' },
-        { label: 'Cobertura Provisiones', value: '168,7%', note: 'Banda de referencia: 150% - 260%' },
-      ],
+      metrics: metricas.banca,
       features: [
         'Curvas vintage de cosechas de crédito (12 a 36 meses)',
         'Diferenciación Mora 30+ CMF vs Mora 90+ Provisiones',
@@ -76,11 +75,7 @@ export default function Home() {
       accentColor: 'amber',
       description:
         'Control operacional de despachos en la Región Metropolitana, cumplimiento de entregas OTIF, costos unitarios y quiebres de inventario.',
-      metrics: [
-        { label: 'Cumplimiento OTIF', value: '89,4%', note: 'Meta EDI: 95%' },
-        { label: 'Lead Time P90', value: '38,0 hrs', note: 'Límite superior SLA' },
-        { label: 'HHI Proveedores', value: '1.820 pts', note: 'Concentración moderada' },
-      ],
+      metrics: metricas.logistica,
       features: [
         'Cumplimiento OTIF desglosado por ruta de transporte',
         'Distribución de lead times con percentiles P50 y P90',
@@ -159,10 +154,21 @@ export default function Home() {
               }[dash.accentColor];
 
               return (
-                <div
+                /* `article` + enlace estirado, en vez de `div` con un botón suelto
+                   al pie. Antes solo el CTA era clicable: ~90% del área visible
+                   de la tarjeta —título, métricas, capacidades— no respondía al
+                   toque, y en móvil obligaba a apuntar a un botón de 40px de
+                   alto en el borde inferior de un bloque largo.
+
+                   El enlace se estira con `absolute inset-0`, así que el
+                   contenido sigue siendo texto seleccionable y el objetivo
+                   táctil sigue siendo 44px+ reales. El CTA pasa a `span`: si
+                   fuera otro enlace al mismo destino, un lector de pantalla
+                   anunciaría "enlace a Retail" dos veces por tarjeta. */
+                <article
                   key={dash.id}
                   id={dash.id}
-                  className={`rounded-2xl border border-border/80 bg-card p-6 flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-md ${borderAccent}`}
+                  className={`group relative rounded-2xl border border-border/80 bg-card p-6 flex flex-col justify-between transition-all duration-200 shadow-xs hover:shadow-md focus-within:border-ring ${borderAccent}`}
                 >
                   <div className="space-y-5">
                     {/* Header de la tarjeta */}
@@ -251,24 +257,40 @@ export default function Home() {
                           {dash.benchmark}
                         </strong>
                       </div>
-                      <RepoLinkBadge label="Pipeline de datos" variant="pill" />
+                      {/* `relative z-20` lo saca de encima del enlace estirado:
+                          apunta al pipeline de GitHub, o sea a otro destino, y
+                          tiene que seguir siendo alcanzable con teclado y clic. */}
+                      <div className="relative z-20">
+                        <RepoLinkBadge label="Pipeline de datos" variant="pill" />
+                      </div>
                     </div>
 
-                    <Link
-                      href={dash.href}
-                      className={`w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-xs transition-all shadow-xs ${
+                    {/* Afordancia visual, no un segundo enlace al mismo sitio. */}
+                    <span
+                      aria-hidden="true"
+                      className={`w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white font-semibold text-xs shadow-xs transition-all group-hover:brightness-95 ${
                         dash.accentColor === 'blue'
-                          ? 'bg-blue-700 hover:bg-blue-800'
+                          ? 'bg-blue-700'
                           : dash.accentColor === 'emerald'
-                          ? 'bg-emerald-700 hover:bg-emerald-800'
-                          : 'bg-amber-700 hover:bg-amber-800'
+                          ? 'bg-emerald-700'
+                          : 'bg-amber-700'
                       }`}
                     >
                       <span>{dash.cta}</span>
                       <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    </span>
                   </div>
-                </div>
+
+                  {/* El enlace real de la tarjeta. El nombre accesible va en un
+                      `sr-only` porque el texto visible es una tabla de métricas
+                      que, leído entero, no describe la acción. */}
+                  <Link
+                    href={dash.href}
+                    className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <span className="sr-only">{dash.cta}</span>
+                  </Link>
+                </article>
               );
             })}
           </div>
@@ -363,6 +385,51 @@ export default function Home() {
               <span>Logística</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
+          </div>
+        </section>
+
+        {/* Cierre: identidad y evidencia.
+            La revisión de diseño señaló que el portafolio declaraba meta de
+           conversión a reclutadores (AGENTS §4) sin que hubiera un solo nombre
+            propio, un canal de contacto ni una forma de ejecutar el pipeline.
+            Es lo último que ve quien escanea en treinta segundos, así que es
+            donde se cierra el portafolio. */}
+        <section className="rounded-2xl border border-border/80 bg-card p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+            <div className="space-y-1.5 max-w-xl">
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+                Bastián Berrios
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Data/BI Engineering · dashboards interactivos para el mercado corporativo chileno.
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Los tres paneles se ejecutan sobre datos sintéticos deterministas: el mismo
+                pipeline que los genera es el que puedes correr y auditar, con{' '}
+                <code className="font-mono text-[11px] text-foreground">pnpm data:generate</code>{' '}
+                y{' '}
+                <code className="font-mono text-[11px] text-foreground">pnpm data:check</code>.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+              <a
+                href="https://github.com/berriosb/dashboards-portfolio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border bg-background hover:bg-muted text-foreground font-medium text-xs transition-all"
+              >
+                <span>Código y pipeline</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="mailto:hola@berrios.dev"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-foreground text-background hover:opacity-90 font-medium text-xs transition-all"
+              >
+                <span>Contacto</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         </section>
       </main>

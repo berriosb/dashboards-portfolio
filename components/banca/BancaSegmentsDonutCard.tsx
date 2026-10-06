@@ -132,7 +132,7 @@ export function BancaSegmentsDonutCard({
             type="button"
             onClick={() => onSelectSegment?.(selectedSegment === d.segmento ? null : d.segmento)}
             aria-pressed={selectedSegment === d.segmento}
-            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+            className={`flex items-center gap-1.5 cursor-pointer px-2 py-1.5 min-h-11 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
               selectedSegment === d.segmento
                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'

@@ -132,7 +132,11 @@ export function DonutChartCard({
             type="button"
             onClick={() => onSelectChannel?.(selectedChannel === d.canal ? null : d.canal)}
             aria-pressed={selectedChannel === d.canal}
-            className={`flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+            /* `min-h-11`: con `py-0.5` el botón quedaba en 20px de alto, muy por debajo
+               del área táctil mínima de 44px. Medido en móvil real: cuatro
+               botones de leyenda a 20px y sin la mitigación de `.tap-target`,
+               que es la clase que sí salva a los tooltips de glosario. */
+            className={`flex items-center gap-1.5 cursor-pointer px-2 py-1.5 min-h-11 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
               selectedChannel === d.canal
                 ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-semibold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'

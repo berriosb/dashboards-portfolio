@@ -72,6 +72,19 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
     });
   };
 
+  /* El insight viene de `dataset.meta.businessInsight` y no se recalcula: es
+     contexto del dataset completo. Con filtros activos, el banner lo declara
+     en vez de describir en voz alta una cartera que la vista no está
+     mostrando. */
+  const filtrosActivos = [
+    query.producto ? `producto ${query.producto}` : null,
+    query.segmento ? `segmento ${query.segmento}` : null,
+    query.region ? `región ${query.region}` : null,
+    query.tramoMora ? `tramo de mora ${query.tramoMora}` : null,
+  ].filter((f): f is string => Boolean(f));
+
+  const hayFiltros = filtrosActivos.length > 0;
+
   return (
     <div className="w-full space-y-6 pb-12">
       {/* Top Header */}
@@ -114,6 +127,8 @@ export function BancaDashboard({ dataset }: BancaDashboardProps) {
         descripcion={dataset.meta.businessInsight.descripcion}
         accionRecomendada={dataset.meta.businessInsight.accionRecomendada}
         variant="banca"
+        alcance={hayFiltros ? 'filtrado' : 'dataset'}
+        filtrosActivos={filtrosActivos}
       />
 
       {/* Barra de Filtros con Nuqs */}

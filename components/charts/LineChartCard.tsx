@@ -123,15 +123,30 @@ export function LineChartCard({ data, metaMensual = null, metaLabel, periodoLabe
             {metaMensual !== null && metaMensual > 0 && (
               <ReferenceLine
                 y={metaMensual}
-                stroke="#2563eb"
+                /* `stroke` es trazo, no texto: puede seguir siendo el azul de la
+                   serie. El RÓTULO sí es texto de 10px, y ahí `#2563eb` daba
+                   4,6:1 en claro pero caía a 3,85:1 en dark, por debajo del
+                   4,5:1 de WCAG AA. Era el único atributo visual del repo con
+                   hex fijo sin variante dark, así que se pasó al token
+                   `--retail-accent`, que ya se invierte en dark (#2563eb →
+                   #3b82f6).
+
+                   SIN envoltura `hsl()`: el token ya contiene un color
+                   completo, no una terna HSL. `hsl(var(--retail-accent))` es
+                   CSS inválido, la declaración se descarta entera y el texto
+                   queda en negro — el mismo modo de fallo que el comentario de
+                   más abajo describe para los atributos de presentación. */
+                stroke="var(--retail-accent)"
                 strokeDasharray="4 4"
                 opacity={0.65}
                 label={{
                   value: metaLabel ?? `Meta ${formatCLP(metaMensual, { compact: true })}`,
                   position: 'insideTopLeft',
-                  fill: '#2563eb',
                   fontSize: 10,
                   fontWeight: 600,
+                  /* `style` y no `fill`: una custom property no resuelve dentro
+                     de un atributo de presentación SVG. */
+                  style: { fill: 'var(--retail-accent)' },
                 }}
               />
             )}

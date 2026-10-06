@@ -28,6 +28,65 @@ interface OtifRoutesBarCardProps {
   onSelectRuta?: (ruta: string | null) => void;
 }
 
+/* Umbrales del SLA OTIF del proyecto (ver OTIF_META en lib/metric-definitions).
+   95% es la meta contractual del acuerdo de nivel de servicio; 90% es el piso
+   operativo interno bajo el cual la ruta se considera crítica. */
+const OTIF_META = 95;
+const OTIF_PISO = 90;
+
+/**
+ * Rampa de un solo hue (ámbar, el acento de Logística) con tres niveles de
+ * severidad, más la clave de lectura que el color solo nunca puede dar.
+ *
+ * Antes cada barra salía en uno de TRES colores (#e11d48/#d97706/#059669) y el
+ * estado viajaba únicamente por el color, sin etiqueta: en escala de grises,
+ * con daltonismo o impreso en B/N, el nivel de incumplimiento era indistinguible.
+ * Además eran hex fijos, el único punto del componente que no respetaba el tema.
+ *
+ * Ahora la severidad se codifica en la INTENSIDAD de un solo hue y se usan las
+ * utilidades `fill-*` de Tailwind, que resuelven light/dark ellas solas. La
+ * longitud de la barra sigue siendo la señal primaria, que es la única que no
+ * depende del color. */
+const OTIF_RAMP = {
+  critico: {
+    fillClass: 'fill-amber-800 dark:fill-amber-600',
+    swatchClass: 'bg-amber-800 dark:bg-amber-600',
+    selectedClass: 'fill-amber-900 dark:fill-amber-700',
+    label: 'Crítico',
+    rango: `< ${OTIF_PISO}%`,
+  },
+  bajoMeta: {
+    fillClass: 'fill-amber-600 dark:fill-amber-500',
+    swatchClass: 'bg-amber-600 dark:bg-amber-500',
+    selectedClass: 'fill-amber-700 dark:fill-amber-600',
+    label: 'Bajo meta',
+    rango: `${OTIF_PISO}–${OTIF_META - 1}%`,
+  },
+  enMeta: {
+    fillClass: 'fill-amber-400 dark:fill-amber-400',
+    swatchClass: 'bg-amber-400 dark:bg-amber-400',
+    selectedClass: 'fill-amber-500 dark:fill-amber-500',
+    label: 'En meta',
+    rango: `≥ ${OTIF_META}%`,
+  },
+  desactivadoClass: 'fill-amber-200/70 dark:fill-amber-200/20',
+} as const;
+
+type OtifSeveridad = 'critico' | 'bajoMeta' | 'enMeta';
+
+/** Sufijo del token de estado para el texto del rótulo de cada barra. */
+const severidadTexto: Record<OtifSeveridad, 'critical' | 'warn' | 'good'> = {
+  critico: 'critical',
+  bajoMeta: 'warn',
+  enMeta: 'good',
+};
+
+function otifSeverity(otifPct: number): OtifSeveridad {
+  if (otifPct < OTIF_PISO) return 'critico';
+  if (otifPct < OTIF_META) return 'bajoMeta';
+  return 'enMeta';
+}
+
 export function OtifRoutesBarCard({
   data,
   selectedRuta,
@@ -109,7 +168,6 @@ export function OtifRoutesBarCard({
               tick={({ x, y, payload }) => {
                 const item = data.find((d) => d.ruta === payload.value);
                 const otif = item?.otifPct ?? 0;
-                const critico = otif < 90;
                 return (
                   <g transform={`translate(${x},${y})`}>
                     <text
@@ -130,17 +188,25 @@ export function OtifRoutesBarCard({
                          resuelve dentro de un atributo de presentación SVG —
                          se verificó que `fill="hsl(var(--status-critical))"`
                          computaba a rgb(0,0,0), o sea texto negro invisible en
-                         dark. En `style` el var() sí se resuelve. */
+                         dark. En `style` el var() sí se resuelve.
+
+                         La severidad se escribe en palabras además del color
+                         (AGENTS §3.3): en la etiqueta ya se lee si la ruta
+                         está en meta o no, sin depender del tono de la barra. */
                       style={{
-                        fill:
-                          critico
-                            ? 'hsl(var(--status-critical))'
-                            : otif >= 95
-                              ? 'hsl(var(--status-good))'
-                              : 'hsl(var(--status-warn))',
+                        fill: `hsl(var(--status-${severidadTexto[otifSeverity(otif)]}))`,
+                        fontVariantNumeric: 'tabular-nums',
                       }}
                     >
                       {formatPercent(otif)}
+                    </text>
+                    <text
+                      textAnchor="end"
+                      dy={21}
+                      fontSize={8}
+                      fill="hsl(var(--muted-foreground))"
+                    >
+                      {OTIF_RAMP[otifSeverity(otif)].label}
                     </text>
                   </g>
                 );
@@ -182,7 +248,22 @@ export function OtifRoutesBarCard({
                 return null;
               }}
             />
-            <ReferenceLine x={95} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'Meta 95%', position: 'top', fill: '#10b981', fontSize: 10 }} />
+            {/* `style` y no el atributo `fill`: una custom property NO resuelve dentro de
+                un atributo de presentación SVG. Con #10b981 directo el rótulo
+                quedaba en 2,54:1 sobre superficie clara, por debajo del 4,5:1
+                de WCAG AA para texto normal; ahora usa el token --status-good,
+                que ya está calibrado y tiene su variante dark. */}
+            <ReferenceLine
+              x={OTIF_META}
+              stroke="hsl(var(--status-good))"
+              strokeDasharray="3 3"
+              label={{
+                value: 'Meta 95%',
+                position: 'top',
+                fontSize: 10,
+                style: { fill: 'hsl(var(--foreground))' },
+              }}
+            />
             <Bar
               dataKey="otifPct"
               radius={[0, 4, 4, 0]}
@@ -197,17 +278,47 @@ export function OtifRoutesBarCard({
               {data.map((entry, index) => {
                 const isSelected = selectedRuta === entry.ruta;
                 const isFilteredOut = selectedRuta && !isSelected;
-                const isCritical = entry.otifPct < 90;
-                const baseColor = isCritical ? '#e11d48' : entry.otifPct >= 95 ? '#059669' : '#d97706';
+                /* Rampa ÁMBAR única, no tricolor.
+                   AGENTS §3.2 fija un solo color de acento por dashboard y el de
+                   Logística es el ámbar. Antes cada barra salía en uno de TRES
+                   colores (#e11d48/#d97706/#059669) y el estado viajaba solo por
+                   el color, sin etiqueta: en gris, daltónico o impreso en B/N
+                   el nivel de incumplimiento era indistinguible.
+
+                   Ahora la severidad se codifica en la INTENSIDAD de un solo
+                   hue, y el estado textual ("Crítico" / "Bajo SLA" / "En meta")
+                   va explícito junto al porcentaje. La longitud de la barra sigue
+                   siendo la señal primaria, que es la que no depende del color. */
+                const severidad = otifSeverity(entry.otifPct);
                 return (
                   <Cell
                     key={`ruta-cell-${index}`}
-                    fill={isSelected ? '#b45309' : isFilteredOut ? '#fed7aa' : baseColor}
+                    className={
+                      isFilteredOut
+                        ? OTIF_RAMP.desactivadoClass
+                        : isSelected
+                          ? OTIF_RAMP[severidad].selectedClass
+                          : OTIF_RAMP[severidad].fillClass
+                    }
                     opacity={isFilteredOut ? 0.35 : 1}
                   />
                 );
               })}
             </Bar>
+            {/* Leyenda de estado: sin esto, la rampa es una escala de color sin
+                decodificador. Cada nivel dice su nombre y su corte. */}
+            <ul className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {(['critico', 'bajoMeta', 'enMeta'] as const).map((nivel) => (
+                <li key={nivel} className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground">
+                  <span
+                    aria-hidden="true"
+                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${OTIF_RAMP[nivel].swatchClass}`}
+                  />
+                  <span className="font-medium text-foreground">{OTIF_RAMP[nivel].label}</span>
+                  <span className="tabular-nums">{OTIF_RAMP[nivel].rango}</span>
+                </li>
+              ))}
+            </ul>
           </BarChart>
         </ResponsiveContainer>
       </div>

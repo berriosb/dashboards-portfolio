@@ -4,6 +4,7 @@ import React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { formatCLP, formatNumber } from '@/lib/format';
 import type { RfmAxes, RfmQuintileBand } from '@/lib/rfm';
+import { rfmSegmentLabel } from '@/lib/rfm';
 
 export interface RfmCellData {
   recency: number;
@@ -39,11 +40,29 @@ function bandLabel(
   return `${band.min}-${band.max} ${unit}`;
 }
 
-function recencyLabel(band: RfmQuintileBand | undefined): string {
+/**
+ * Rótulo de RECENCIA como rango contiguo y no como mínimo/máximo observados.
+ *
+ * El rango observado era fiel pero no partía el eje: con los datos actuales
+ * producía R4 "47-100d" y R3 "100-125d" (el 100 en las dos) y R2 "125-207d"
+ * con R1 ">211d", dejando 208-211d sin cubrir en ningún quintil. Un eje que se
+ * solapa y además deja huecos invita a contar cuántos clientes caen "después de
+ * 207" y salen mal.
+ *
+ * La forma correcta son cortes contiguos derivados del rango real: el
+ * límite superior de un quintil es el mínimo del siguiente. Así el eje se lee
+ * como una partición de la línea de tiempo, sin ambigüedad y sin huecos, y
+ * sigue reflejando el dataset activo en vez de cortes fijos que se desincronicen.
+ */
+function recencyLabel(band: RfmQuintileBand | undefined, siguiente?: RfmQuintileBand): string {
   if (!band || band.count === 0) return '—';
+  // R5 es el extremo superior del eje (días bajos).
   if (band.score === 5) return `≤${band.max}d`;
+  // R1 es el extremo inferior: se abre hacia +∞.
   if (band.score === 1) return `>${band.min - 1}d`;
-  return `${band.min}-${band.max}d`;
+  // Quintiles intermedios: el tope lo fija el mínimo del quintil siguiente.
+  const tope = siguiente?.count ? siguiente.min - 1 : band.max;
+  return `${band.min}-${tope}d`;
 }
 
 export function RfmHeatmap({
@@ -98,7 +117,7 @@ export function RfmHeatmap({
                   : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted font-medium'
               }`}
             >
-              {seg}
+              {rfmSegmentLabel(seg)}
             </button>
           );
         })}
@@ -120,8 +139,18 @@ export function RfmHeatmap({
           <div className="flex">
             <div className="w-12 shrink-0 flex flex-col justify-around text-right pr-2.5 text-[10px] font-semibold text-muted-foreground">
               {([5, 4, 3, 2, 1] as const).map((score) => (
-                <span key={score} title={`Quintil de recencia ${score} de 5`}>
-                  R{score} ({recencyLabel(axes?.recency.find((b) => b.score === score))})
+                <span
+                  key={score}
+                  title={`Quintil de recencia ${score} de 5`}
+                >
+                  {/* El eje baja de score 5 a 1, así que el "siguiente" que
+                      cierra el rango por arriba es el quintil de score -1. */}
+                  R{score} (
+                  {recencyLabel(
+                    axes?.recency.find((b) => b.score === score),
+                    axes?.recency.find((b) => b.score === score - 1)
+                  )}
+                  )
                 </span>
               ))}
             </div>
@@ -157,7 +186,7 @@ export function RfmHeatmap({
                             ~3.9:1 incluso sobre los azules oscuros. La jerarquía la
                             dan el tamaño y el uppercase. */}
                         <span className="text-[9px] uppercase tracking-tight truncate max-w-full mt-1 font-semibold">
-                          {cell.segment}
+                          {rfmSegmentLabel(cell.segment)}
                         </span>
                         <span className="sr-only">
                           , celda R{cell.recency} F{cell.frequency}
@@ -173,7 +202,7 @@ export function RfmHeatmap({
                       >
                         <div className="space-y-1">
                           <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-1.5">
-                            <span className="font-bold text-foreground">{cell.segment}</span>
+                            <span className="font-bold text-foreground">{rfmSegmentLabel(cell.segment)}</span>
                             <span className="text-[10px] text-muted-foreground font-mono">
                               R: {cell.recency}/5 · F: {cell.frequency}/5
                             </span>

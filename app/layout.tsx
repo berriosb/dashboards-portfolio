@@ -14,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniBI Suite | Enterprise Business Intelligence Chile",
-  description: "Plataforma analítica y vitrina de dashboards corporativos de alto impacto para Retail, Banca y Logística en Chile.",
+  // La marca canónica es "OmniBI Suite", la misma del header y del footer.
+  // Antes el <title> añadía un cuarto nombre distinto a la misma marca.
+  title: "OmniBI Suite | Dashboards Data/BI para el mercado chileno",
+  description:
+    "Portafolio de Bastián Berrios: tres dashboards interactivos de alto impacto (Retail, Banca y Logística) para el mercado chileno de Data/BI.",
 };
 
 export default function RootLayout({

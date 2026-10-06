@@ -73,6 +73,20 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
     });
   };
 
+  /* El insight viene de `dataset.meta.businessInsight` y no se recalcula: es
+     contexto del dataset completo. Con filtros activos —por ejemplo "solo
+     incidencias"— el banner seguía describiendo el cumplimiento de todo el
+     mes, que es justo lo contrario de lo que el usuario pidió ver. */
+  const filtrosActivos = [
+    query.ruta ? `ruta ${query.ruta}` : null,
+    query.transportista ? `transportista ${query.transportista}` : null,
+    query.tipoCarga ? `tipo de carga ${query.tipoCarga}` : null,
+    query.prioridad ? `prioridad ${query.prioridad}` : null,
+    query.soloIncidencias ? 'solo incidencias' : null,
+  ].filter((f): f is string => Boolean(f));
+
+  const hayFiltros = filtrosActivos.length > 0;
+
   return (
     <div className="w-full space-y-6 pb-12">
       {/* Top Header */}
@@ -115,6 +129,8 @@ export function LogisticaDashboard({ dataset }: LogisticaDashboardProps) {
         descripcion={dataset.meta.businessInsight.descripcion}
         accionRecomendada={dataset.meta.businessInsight.accionRecomendada}
         variant="logistica"
+        alcance={hayFiltros ? 'filtrado' : 'dataset'}
+        filtrosActivos={filtrosActivos}
       />
 
       {/* Barra de Filtros con Nuqs */}

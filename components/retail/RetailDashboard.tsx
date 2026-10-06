@@ -11,6 +11,7 @@ import { InsightBanner } from '@/components/insights/InsightBanner';
 import { FilterBar } from '@/components/filters/FilterBar';
 import { resolveBenchmark, RETAIL_METRICS } from '@/lib/metric-definitions';
 import { formatCLP, formatDate } from '@/lib/format';
+import { rfmSegmentLabel } from '@/lib/rfm';
 import { KpiCard } from '@/components/charts/KpiCard';
 import { LineChartCard } from '@/components/charts/LineChartCard';
 import { BarChartCard } from '@/components/charts/BarChartCard';
@@ -81,6 +82,59 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
   const metaVentasMensual =
     (meta('ventasNetas')?.value ?? 0) / mesesEnSerie;
 
+  /* Alcance real de la vista.
+
+     El insight viene de `dataset.meta.businessInsight` y el embudo de
+     `dataset.precomputed.funnel`: ninguno se recalcula con los filtros. Antes,
+     con `?canal=online`, el panel anunciaba "255 de 1.000 registros" y las
+     ventas caían a la mitad, mientras el banner seguía hablando de una fuga en
+     tiendas físicas y el funnel mostraba los 128.400 visitantes del dataset
+     entero. El usuario no tenía forma de saberlo, y es exactamente el momento
+     en que un revisor técnico deja de confiar en el producto.
+
+     Ahora los dos declaran su alcance. El insight avisa que es contexto del
+     dataset; el embudo escala su volumen y lo dice. */
+
+  const filtrosActivos = [
+    query.categoria ? `categoría ${query.categoria}` : null,
+    query.canal ? `canal ${query.canal}` : null,
+    query.region ? `región ${query.region}` : null,
+    query.segmentoRfm ? `segmento RFM ${rfmSegmentLabel(query.segmentoRfm)}` : null,
+  ].filter((f): f is string => Boolean(f));
+
+  const hayFiltros = filtrosActivos.length > 0;
+
+  /** Embudo escalado al filtro activo.
+   *
+   * "Visitantes" es una métrica de sesión y el dataset es de transacciones:
+   * el denominador no existe en los registros, así que no se puede recalcular
+   * de verdad. Lo que sí es honesto es mantener las tasas etapa→etapa del
+   * dataset y escalar el volumen por la proporción de pedidos que sobrevive al
+   * filtro, declarando el supuesto en pantalla. Inventar un embudo nuevo sería
+   * fabricar datos; dejar el viejo quieto, fingir que responde al filtro. */
+  const funnelEscalado = useMemo(() => {
+    const funnel = dataset.precomputed.funnel;
+
+    // El embudo es de volumen de sesiones; la unidad comparable que sí existe
+    // en los registros es el pedido. Se escalan por la proporción de pedidos
+    // distintos que sobrevive al filtro, no por la de líneas de transacción:
+    // un pedido tiene varias líneas, así que usar líneas inflaría el factor.
+    const pedidosTotales = new Set(dataset.records.map((r) => r.orderId)).size;
+    const pedidosFiltrados = new Set(
+      aggregated.filteredRecords.filter((r) => !r.isReturn).map((r) => r.orderId)
+    ).size;
+
+    const factor =
+      pedidosTotales > 0 ? Math.min(1, Math.max(0, pedidosFiltrados / pedidosTotales)) : 1;
+
+    if (factor >= 0.999) return funnel;
+
+    return funnel.map((s) => ({
+      step: s.step,
+      value: Math.max(0, Math.round(s.value * factor)),
+    }));
+  }, [dataset.precomputed.funnel, dataset.records, aggregated.filteredRecords]);
+
   // Handlers para interactividad
   const handleResetFilters = () => {
     setQuery({
@@ -149,6 +203,8 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
         descripcion={dataset.meta.businessInsight.descripcion}
         accionRecomendada={dataset.meta.businessInsight.accionRecomendada}
         variant="retail"
+        alcance={hayFiltros ? 'filtrado' : 'dataset'}
+        filtrosActivos={filtrosActivos}
       />
 
       {/* Barra de Filtros con Cross-Filtering y Drawer Móvil */}
@@ -302,7 +358,14 @@ export function RetailDashboard({ dataset }: RetailDashboardProps) {
               />
             </div>
             <div className="lg:col-span-6 min-w-0">
-              <FunnelChartCard data={dataset.precomputed.funnel} />
+              <FunnelChartCard
+                data={funnelEscalado}
+                alcanceNota={
+                  hayFiltros
+                    ? 'Volumen escalado por la proporción de pedidos que pasa el filtro, manteniendo las tasas de paso del dataset. "Visitantes" es una métrica de sesión y no se puede recalcular desde transacciones.'
+                    : 'Embudo del dataset completo. No hay registros de sesión para recalcularlo por filtro.'
+                }
+              />
             </div>
           </div>
 

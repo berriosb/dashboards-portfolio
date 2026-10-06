@@ -11,7 +11,7 @@ import {
 import { formatCLP, formatNumber } from '@/lib/format';
 import { Search, Package, Users, ArrowUpDown } from 'lucide-react';
 import { RetailDataset, RetailTransaction } from '@/lib/data-engine';
-import { calculateRfmScores } from '@/lib/rfm';
+import { calculateRfmScores, rfmSegmentLabel } from '@/lib/rfm';
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton';
 
 interface DrilldownDrawerProps {
@@ -297,7 +297,7 @@ export function DrilldownDrawer({
                     </td>
                     <td className="py-2 px-3">
                       <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">
-                        {c.segmento} (R{c.recencyScore}F{c.frequencyScore})
+                        {rfmSegmentLabel(c.segmento)} (R{c.recencyScore}F{c.frequencyScore})
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right tabular-nums font-medium">

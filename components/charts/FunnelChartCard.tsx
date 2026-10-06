@@ -3,8 +3,8 @@
 import React from 'react';
 import { ChartFrame } from './ChartFrame';
 import { DataTable } from './DataTable';
-import { formatNumber, formatPercent } from '@/lib/format';
-import { ArrowDown } from 'lucide-react';
+import { formatNumber, formatPercent, formatDecimal } from '@/lib/format';
+import { ArrowDown, Info } from 'lucide-react';
 
 interface FunnelStep {
   step: string;
@@ -13,9 +13,20 @@ interface FunnelStep {
 
 interface FunnelChartCardProps {
   data: FunnelStep[];
+  /**
+   * Aviso de alcance, visible bajo el embudo.
+   *
+   * "Visitantes" es una métrica de SESIÓN y el dataset es de transacciones: no
+   * hay forma honesta de recomputar el embudo desde los registros, porque no
+   * existe el denominador. Inventarlo sería peor que dejarlo quieto, así que
+   * el volumen se escala por la proporción de pedidos que sobrevive al filtro
+   * y eso se declara en pantalla en vez de dejar que el número parezca
+   * recalculado.
+   */
+  alcanceNota?: string;
 }
 
-export function FunnelChartCard({ data }: FunnelChartCardProps) {
+export function FunnelChartCard({ data, alcanceNota }: FunnelChartCardProps) {
   const maxValue = data[0]?.value || 1;
 
   const tableColumns = [
@@ -40,16 +51,20 @@ export function FunnelChartCard({ data }: FunnelChartCardProps) {
         {data.map((step, idx) => {
           const pctOfTotal = (step.value / maxValue) * 100;
           const prevValue = idx > 0 ? data[idx - 1].value : null;
-          const dropOffRate = prevValue ? (((prevValue - step.value) / prevValue) * 100).toFixed(1) : null;
+          // `formatDecimal` y no `toFixed`: el punto decimal convivía con la
+          // coma de los porcentajes de la derecha en la misma fila.
+          const dropOffRate = prevValue
+            ? formatDecimal(((prevValue - step.value) / prevValue) * 100, 1)
+            : null;
 
           return (
             <div key={step.step} className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-md bg-muted text-foreground border border-border inline-flex items-center justify-center text-[10px] font-bold font-mono">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-5 h-5 shrink-0 rounded-md bg-muted text-foreground border border-border inline-flex items-center justify-center text-[10px] font-bold font-mono">
                     {idx + 1}
                   </span>
-                  <span className="font-semibold text-foreground tracking-tight">
+                  <span className="font-semibold text-foreground tracking-tight truncate">
                     {step.step}
                   </span>
                   {dropOffRate && (
@@ -61,13 +76,13 @@ export function FunnelChartCard({ data }: FunnelChartCardProps) {
                       className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-medium border border-rose-200/50 dark:border-rose-900/40 shrink-0"
                       title={`Tasa de abandono respecto al paso anterior: -${dropOffRate}%`}
                     >
-                      <ArrowDown className="w-2.5 h-2.5" />
+                      <ArrowDown className="w-2.5 h-2.5" aria-hidden="true" />
                       -{dropOffRate}% fuga
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 tabular-nums">
+                <div className="flex items-center gap-3 tabular-nums shrink-0">
                   <span className="font-bold text-foreground">{formatNumber(step.value)}</span>
                   <span className="text-muted-foreground w-12 text-right font-medium text-[11px]">
                     {formatPercent(pctOfTotal)}
@@ -86,6 +101,13 @@ export function FunnelChartCard({ data }: FunnelChartCardProps) {
           );
         })}
       </div>
+
+      {alcanceNota && (
+        <p className="mt-3 flex items-start gap-1.5 text-[10.5px] leading-snug text-muted-foreground border-t border-border/50 pt-2">
+          <Info className="w-3 h-3 mt-px shrink-0" aria-hidden="true" />
+          <span>{alcanceNota}</span>
+        </p>
+      )}
     </ChartFrame>
   );
 }
